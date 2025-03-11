@@ -10,7 +10,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bullmq": "^5.41.8",
     "dotenv": "^16.4.7",
-    "ethers": "^6.13.5"
+    "ethers": "^6.13.5",
+    "ioredis": "^5.6.0",
+    "pg": "^8.13.3"
   }
 }
