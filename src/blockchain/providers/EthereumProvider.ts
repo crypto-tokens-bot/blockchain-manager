@@ -25,7 +25,7 @@ export class EthereumProvider extends AbstractProvider {
 
     const tokenContract = new ethers.Contract(tokenAddress, abi, this.provider);
     const balance = await tokenContract.balanceOf(address);
-    
+
     return BigInt(balance.toString());
   }
   getAccountInfo(address: string): Promise<BlockchainAccount> {
@@ -35,6 +35,7 @@ export class EthereumProvider extends AbstractProvider {
     throw new Error("Method not implemented.");
   }
   estimateGas(txData: any): Promise<bigint> {
+    //let estimateData = this.provider.estimateGas(tx);
     throw new Error("Method not implemented.");
   }
   getTransactionByHash(txHash: string): Promise<any> {
