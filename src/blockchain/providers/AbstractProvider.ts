@@ -6,7 +6,7 @@ export abstract class AbstractProvider {
   constructor(rpcUrl: string) {
     this.rpcUrl = rpcUrl;
   }
-
+  abstract getBalance(address: string, tokenAddress?: string): Promise<bigint>;
   abstract connect(): Promise<void>;
   abstract getAccountInfo(address: string): Promise<BlockchainAccount>;
   abstract sendTransaction(txData: any): Promise<string>;
