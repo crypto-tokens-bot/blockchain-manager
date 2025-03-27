@@ -36,7 +36,7 @@ const processQueue = async () => {
 
 // Event listener for `Deposited`
 contract.on("Deposited", (user, amountMMM, amountUSDT) => {
-  console.log(`📥 Deposit: ${user} deposited ${ethers.formatEther(amountUSDT)} USDT and received ${ethers.formatEther(amountMMM)} MMM`);
+  console.log(`Deposit: ${user} deposited ${ethers.formatEther(amountUSDT)} USDT and received ${ethers.formatEther(amountMMM)} MMM`);
   
   taskQueue.push({
     type: "deposit",
@@ -48,7 +48,7 @@ contract.on("Deposited", (user, amountMMM, amountUSDT) => {
 
 // Event listener for `Withdrawn`
 contract.on("Withdrawn", (user, amountMMM, amountUSDT) => {
-  console.log(`📤 Withdrawal: ${user} withdrew ${ethers.formatEther(amountMMM)} MMM and received ${ethers.formatEther(amountUSDT)} USDT`);
+  console.log(`Withdrawal: ${user} withdrew ${ethers.formatEther(amountMMM)} MMM and received ${ethers.formatEther(amountUSDT)} USDT`);
 
   taskQueue.push({
     type: "withdraw",
@@ -60,7 +60,7 @@ contract.on("Withdrawn", (user, amountMMM, amountUSDT) => {
 
 // Event listener for `ProfitAdded`
 contract.on("ProfitAdded", (amountUSDT) => {
-  console.log(`💰 Profit added: ${ethers.formatEther(amountUSDT)} USDT`);
+  console.log(`Profit added: ${ethers.formatEther(amountUSDT)} USDT`);
 
   taskQueue.push({
     type: "profit",
