@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:indexer": "ts-node src/scripts/startIndexer.ts",
+    "start:indexer:history": "ts-node src/scripts/startIndexer.ts --with-history"
   },
   "keywords": [],
   "author": "",
@@ -11,7 +13,7 @@
   "description": "",
   "dependencies": {
     "axios": "^1.8.4",
-    "bullmq": "^5.41.8",
+    "bullmq": "^5.47.1",
     "bybit-api": "^4.1.0",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.7",
@@ -22,6 +24,7 @@
     "winston-mongodb": "^6.0.0"
   },
   "devDependencies": {
-    "@types/winston": "^2.4.4"
+    "@types/winston": "^2.4.4",
+    "ts-node": "^10.9.2"
   }
 }
