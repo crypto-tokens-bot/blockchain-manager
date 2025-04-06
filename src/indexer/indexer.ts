@@ -1,71 +1,49 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
+import { CONTRACTS_TO_INDEX, IndexerConfig } from "./registry";
+import { eventQueue } from '../queue/eventQueue';
 
 dotenv.config();
 
-const WS_URL = process.env.WS_URL!;
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
+// const WS_URL = process.env.WS_URL!;
+// const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
 
-const provider = new ethers.WebSocketProvider(WS_URL);
 
-const ABI = [
-  "event Deposited(address indexed user, uint256 amountMMM, uint256 amountUSDT)",
-  "event Withdrawn(address indexed user, uint256 amountMMM, uint256 amountUSDT)",
-  "event ProfitAdded(uint256 amountUSDT)"
-];
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!, "sepolia");
 
-const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-
-const taskQueue: { type: string; data: any }[] = [];
-
-console.log("🔍 Indexer started, listening for events...");
-
-const processQueue = async () => {
-  while (taskQueue.length > 0) {
-    const task = taskQueue.shift();
-    if (!task) continue;
-
-    console.log(`⚡ Processing task: ${task.type}`, task.data);
-
-    // Simulate execution (replace with staking or trading logic)
-    await new Promise((res) => setTimeout(res, 500));
-
-    console.log(`✅ Task completed: ${task.type}`);
+export async function runIndexer() {
+  for (const contractConfig of CONTRACTS_TO_INDEX) {
+    setupContractListener(contractConfig);
   }
-};
+}
 
-// Event listener for `Deposited`
-contract.on("Deposited", (user, amountMMM, amountUSDT) => {
-  console.log(`📥 Deposit: ${user} deposited ${ethers.formatEther(amountUSDT)} USDT and received ${ethers.formatEther(amountMMM)} MMM`);
-  
-  taskQueue.push({
-    type: "deposit",
-    data: { user, amountMMM: amountMMM.toString(), amountUSDT: amountUSDT.toString(), timestamp: Date.now() }
+function setupContractListener(config: IndexerConfig) {
+  const { name, address, abi, events } = config;
+  const correctAddress = ethers.getAddress(address);
+  const contract = new ethers.Contract(correctAddress, abi, provider);
+
+  events.forEach((eventName) => {
+    contract.on(eventName, (...args) => {
+      const event = args[args.length - 1];
+      console.log(`[${name}] Event ${eventName}:`, args);
+
+      saveToQueue({
+        contract: name,
+        event: eventName,
+        args,
+        blockNumber: event.blockNumber
+      });
+    });
   });
 
-  processQueue();
-});
+  console.log(`[+] Listening to ${name} at ${address}`);
+}
 
-// Event listener for `Withdrawn`
-contract.on("Withdrawn", (user, amountMMM, amountUSDT) => {
-  console.log(`📤 Withdrawal: ${user} withdrew ${ethers.formatEther(amountMMM)} MMM and received ${ethers.formatEther(amountUSDT)} USDT`);
-
-  taskQueue.push({
-    type: "withdraw",
-    data: { user, amountMMM: amountMMM.toString(), amountUSDT: amountUSDT.toString(), timestamp: Date.now() }
-  });
-
-  processQueue();
-});
-
-// Event listener for `ProfitAdded`
-contract.on("ProfitAdded", (amountUSDT) => {
-  console.log(`💰 Profit added: ${ethers.formatEther(amountUSDT)} USDT`);
-
-  taskQueue.push({
-    type: "profit",
-    data: { amountUSDT: amountUSDT.toString(), timestamp: Date.now() }
-  });
-
-  processQueue();
-});
+async function saveToQueue(data: any) {
+  const processedData = JSON.parse(
+    JSON.stringify(data, (key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    )
+  );
+  await eventQueue.add('contract-event', processedData);
+}

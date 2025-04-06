@@ -1,6 +1,7 @@
 import logger from './src/utils/logger';
 import winston from "winston";
 import { MongoDB } from "winston-mongodb";
+import { runIndexer } from './src/indexer/indexer';
 
 import dotenv from "dotenv";
 
@@ -29,3 +30,6 @@ if (process.env.LOG_TO_DB === "true") {
     })
   );
 }
+
+
+runIndexer();
