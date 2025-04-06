@@ -40,5 +40,10 @@ function setupContractListener(config: IndexerConfig) {
 }
 
 async function saveToQueue(data: any) {
-  await eventQueue.add('contract-event', data);
+  const processedData = JSON.parse(
+    JSON.stringify(data, (key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    )
+  );
+  await eventQueue.add('contract-event', processedData);
 }

@@ -1,9 +1,7 @@
 import { ethers } from "ethers";
 import { CONTRACTS_TO_INDEX } from "./registry";
 import { eventQueue } from "../queue/eventQueue";
-//import { parseEventArgs } from "./utils/parseEventArgs";
 import { JsonRpcProvider, Log, Filter } from "ethers";
-import { JsonRpcApiPollingProvider, JsonRpcApiProvider } from "ethers/lib.commonjs/providers/provider-jsonrpc";
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!);
 
@@ -44,9 +42,6 @@ async function fetchLogsInRange(
 
 export async function fetchPastEvents(contractAddress: string, abi: string) {
     const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!, "sepolia");
-
-    //const contractAddress = "0xc9Cf4D74BF240B26ae1b613f85696ee8da0ad549";
-    //const abi = [ "event Deposited(address indexed user, uint256 amountMMM, uint256 amountUSDT)" ];
     const contract = new ethers.Contract(contractAddress, abi, provider);
   
     const events = contract.getEvent("Deposited");
@@ -70,5 +65,21 @@ export async function fetchPastEvents(contractAddress: string, abi: string) {
   for (const log of logs) {
     const parsed = contract.interface.decodeEventLog(events.fragment, log.data, log.topics);
     console.log("Parsed event:", parsed);
+
+    await saveToQueue({
+        contract: contractAddress,
+        event: "Deposited",
+        data: parsed,
+        blockNumber: log.blockNumber
+      });
   }
+}
+async function saveToQueue(data: any) {
+    const processedData = JSON.parse(
+        JSON.stringify(data, (key, value) =>
+          typeof value === "bigint" ? value.toString() : value
+        )
+      );
+    await eventQueue.add('contract-event', processedData);
+    console.log("Event saved to queue:", data);
 }
