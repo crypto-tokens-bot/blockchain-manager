@@ -9,7 +9,7 @@ dotenv.config();
 // const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
 
 
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!);
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!, "sepolia");
 
 export async function runIndexer() {
   for (const contractConfig of CONTRACTS_TO_INDEX) {
@@ -19,7 +19,8 @@ export async function runIndexer() {
 
 function setupContractListener(config: IndexerConfig) {
   const { name, address, abi, events } = config;
-  const contract = new ethers.Contract(address, abi, provider);
+  const correctAddress = ethers.getAddress(address);
+  const contract = new ethers.Contract(correctAddress, abi, provider);
 
   events.forEach((eventName) => {
     contract.on(eventName, (...args) => {
