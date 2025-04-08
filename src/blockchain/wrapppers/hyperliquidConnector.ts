@@ -3,8 +3,18 @@ import { HttpTransport, WebSocketTransport } from "@nktkas/hyperliquid";
 import { ethers } from "ethers";
 import { privateKeyToAccount } from "viem/accounts";
 
-import type { Hex, PerpsAssetCtx, PerpsUniverse, PublicClient } from "@nktkas/hyperliquid/esm/mod";
-import { formatPrice, formatSize, getAssetData, randomCloid } from "../utils/hyperliquidUtils";
+import type {
+  Hex,
+  PerpsAssetCtx,
+  PerpsUniverse,
+  PublicClient,
+} from "@nktkas/hyperliquid/esm/mod";
+import {
+  formatPrice,
+  formatSize,
+  getAssetData,
+  randomCloid,
+} from "../utils/hyperliquidUtils";
 
 export interface OrderParams {
   symbol: string; // A trading pair, for example, "AXS/USDT"
@@ -24,11 +34,9 @@ export class HyperliquidConnector {
     private apiKey: string,
     private apiSecret: string,
     private baseURL: string = "https://api.hyperliquid.io",
-    useWebSocket: boolean = false
+    isTestnet: boolean = true
   ) {
-    const transport = useWebSocket
-      ? new hl.WebSocketTransport()
-      : new hl.HttpTransport();
+    const transport = new hl.HttpTransport({ isTestnet });
     const account = privateKeyToAccount(privateKey);
     this.walletClient = new hl.WalletClient({
       wallet: account,
@@ -45,7 +53,7 @@ export class HyperliquidConnector {
    */
   async createLimitOrder(params: OrderParams): Promise<any> {
     if (params.type !== "LIMIT" || !params.price) {
-      throw new Error("Для лимитного ордера обязательно укажите цену.");
+      throw new Error("Please specify the price for the limit order.");
     }
     try {
       const order = await this.walletClient.order({
@@ -77,7 +85,7 @@ export class HyperliquidConnector {
    */
   async createMarketOrder(params: OrderParams): Promise<any> {
     if (params.type !== "MARKET") {
-      throw new Error("Для рыночного ордера тип должен быть MARKET.");
+      throw new Error("For a market order, the type must be MARKET.");
     }
 
     try {
@@ -121,15 +129,15 @@ export class HyperliquidConnector {
   /**
    * Get balance
    */
-  //   async getBalance(): Promise<any> {
-  //     try {
-  //       const balance = await this.publicClient.bal({ user: "0x..." });
-  //       return balance;
-  //     } catch (error) {
-  //       console.error("Error in getBalance:", error);
-  //       throw error;
-  //     }
-  //   }
+  async getBalance(): Promise<any> {
+    try {
+      const balance = await this.publicClient.portfolio({ user: "0x..." });
+      return balance;
+    } catch (error) {
+      console.error("Error in getBalance:", error);
+      throw error;
+    }
+  }
 
   /**
    * Cancellation of the order by its ID.
@@ -140,9 +148,9 @@ export class HyperliquidConnector {
         cancels: [
           {
             a: assetIndex,
-            o: orderId
-          }
-        ]
+            o: orderId,
+          },
+        ],
       });
       return result;
     } catch (error) {
@@ -150,30 +158,58 @@ export class HyperliquidConnector {
       throw error;
     }
   }
-  
 
   async cancelAllOrders(symbol: string): Promise<any> {
     const account = privateKeyToAccount(this.privateKey);
 
     const { id, universe, ctx } = await getAssetData(this.publicClient, symbol);
-    const pxUp = formatPrice(new BigNumber(ctx.markPx).times(1.01), universe.szDecimals);
-    const pxDown = formatPrice(new BigNumber(ctx.markPx).times(0.99), universe.szDecimals);
-    const sz = formatSize(new BigNumber(15).div(ctx.markPx), universe.szDecimals);
+    const pxUp = formatPrice(
+      new BigNumber(ctx.markPx).times(1.01),
+      universe.szDecimals
+    );
+    const pxDown = formatPrice(
+      new BigNumber(ctx.markPx).times(0.99),
+      universe.szDecimals
+    );
+    const sz = formatSize(
+      new BigNumber(15).div(ctx.markPx),
+      universe.szDecimals
+    );
 
-    const openOrders = await this.publicClient.openOrders({ user: account.address });
-        const cancels = openOrders.map((o) => ({ a: id, o: o.oid }));
-        await this.walletClient.cancel({ cancels });
+    const openOrders = await this.publicClient.openOrders({
+      user: account.address,
+    });
+    const cancels = openOrders.map((o) => ({ a: id, o: o.oid }));
+    await this.walletClient.cancel({ cancels });
 
-        await this.walletClient.order({
-            orders: [{
-                a: id,
-                b: false,
-                p: pxDown,
-                s: "0", // Full position size
-                r: true,
-                t: { limit: { tif: "Gtc" } },
-            }],
-            grouping: "na",
-        }).catch(() => undefined);
+    await this.walletClient
+      .order({
+        orders: [
+          {
+            a: id,
+            b: false,
+            p: pxDown,
+            s: "0", // Full position size
+            r: true,
+            t: { limit: { tif: "Gtc" } },
+          },
+        ],
+        grouping: "na",
+      })
+      .catch(() => undefined);
+  }
+
+  async updateLeverage(): Promise<any> {
+    try {
+      const response = this.walletClient.updateLeverage({
+        asset: 1,
+        leverage: 5,
+        isCross: true,
+      });
+      return response;
+    } catch (error) {
+      console.error("Error in cancelOrder:", error);
+      throw error;
+    }
   }
 }
