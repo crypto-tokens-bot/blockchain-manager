@@ -3,16 +3,16 @@ import { HyperliquidConnector, OrderParams } from "../blockchain/wrapppers/hyper
 
 async function testHyperliquidOrders() {
   const connector = new HyperliquidConnector(
+    process.env.PRIVATE_KEY! as `0x${string}`,
     process.env.HYPERLIQUID_API_KEY! as `0x${string}`,
-    process.env.HYPERLIQUID_API_SECRET!,
+    process.env.HYPERLIQUID_API_SECRET! as `0x${string}`,
     process.env.HYPERLIQUID_BASE_URL!, //  "https://api.hyperliquid.xyz"
-    process.env.PRIVATE_KEY!,
-    true,
+    false,
   );
 
   console.log("=== Testing Hyperliquid orders on testnet ===");
   try {
-    const leverage = await connector.updateLeverage();
+    const leverage = await connector.updateLeverage(1, 3);
     console.log("Leverage Response:", leverage);
   } catch (error) {
     console.error("Limit Order Error:", error);

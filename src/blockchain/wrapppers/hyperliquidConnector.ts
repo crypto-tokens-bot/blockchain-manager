@@ -38,6 +38,7 @@ export class HyperliquidConnector {
   ) {
     const transport = new hl.HttpTransport({ isTestnet });
     const account = privateKeyToAccount(privateKey);
+    console.log(account.address);
     this.walletClient = new hl.WalletClient({
       wallet: account,
       transport,
@@ -199,12 +200,12 @@ export class HyperliquidConnector {
       .catch(() => undefined);
   }
 
-  async updateLeverage(): Promise<any> {
+  async updateLeverage(asset: number, leverage: number, isCross = true): Promise<any> {
     try {
       const response = this.walletClient.updateLeverage({
-        asset: 1,
-        leverage: 5,
-        isCross: true,
+        asset,
+        leverage,
+        isCross,
       });
       return response;
     } catch (error) {
