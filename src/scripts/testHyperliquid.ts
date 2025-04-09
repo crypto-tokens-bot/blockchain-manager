@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { HyperliquidConnector, OrderParams } from "../blockchain/wrapppers/hyperliquidConnector";
+import { getAssetData } from "../blockchain/utils/hyperliquidUtils";
 
 async function testHyperliquidOrders() {
   const connector = new HyperliquidConnector(
@@ -11,21 +12,30 @@ async function testHyperliquidOrders() {
   );
 
   console.log("=== Testing Hyperliquid orders on testnet ===");
+  const sui = await connector.getAssetData("SUI");
+  console.log("sui:", sui);
+  
   try {
-    const leverage = await connector.updateLeverage(1, 3);
+    const leverage = await connector.updateLeverage(sui, 3);
     console.log("Leverage Response:", leverage);
   } catch (error) {
     console.error("Limit Order Error:", error);
   }
 
+  let position = await connector.getPosition("SUI");
+  console.log("position:", position);
+
+  let balance = await connector.getBalance();
+  console.log("balance:", balance);
+  return;
   try {
     const limitOrderParams: OrderParams = {
-      symbol: "AXS/USDT",
-      side: "BUY",
+      symbol: "SUI",
+      side: "SELL",
       type: "LIMIT",
-      quantity: 10,
-      price: "30000",
-      leverage: 1,
+      quantity: 17,
+      price: "2",
+      leverage: 3,
     };
 
     const limitOrderResponse = await connector.createLimitOrder(limitOrderParams);

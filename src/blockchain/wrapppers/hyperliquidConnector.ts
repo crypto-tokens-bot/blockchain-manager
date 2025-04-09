@@ -56,11 +56,12 @@ export class HyperliquidConnector {
     if (params.type !== "LIMIT" || !params.price) {
       throw new Error("Please specify the price for the limit order.");
     }
+    let asset = await this.getAssetData(params.symbol);
     try {
       const order = await this.walletClient.order({
         orders: [
           {
-            a: 0,
+            a: asset,
             b: params.side === "BUY",
             p: params.price,
             s: params.quantity.toString(),
@@ -119,7 +120,7 @@ export class HyperliquidConnector {
    */
   async getPosition(symbol: string): Promise<any> {
     try {
-      const position = await this.publicClient.openOrders({ user: "0x..." });
+      const position = await this.publicClient.openOrders({ user: this.apiKey as `0x${string}`});
       return position;
     } catch (error) {
       console.error("Error in getPosition:", error);
@@ -128,18 +129,37 @@ export class HyperliquidConnector {
   }
 
   /**
-   * Get balance
+   * Get portfolio
    */
-  async getBalance(): Promise<any> {
+  async getPortfolio(): Promise<any> {
     try {
-      const balance = await this.publicClient.portfolio({ user: "0x..." });
+      const balance = await this.publicClient.portfolio({ user: this.apiKey as `0x${string}`});
       return balance;
     } catch (error) {
-      console.error("Error in getBalance:", error);
+      console.error("Error in getPortfolio:", error);
       throw error;
     }
   }
 
+  async getBalance(): Promise<any> {
+    try {
+      const balance = await this.publicClient.allMids()
+      return balance;
+    } catch (error) {
+      console.error("Error in getPortfolio:", error);
+      throw error;
+    }
+  }
+
+  async GetAllMids(): Promise<any> {
+    try {
+      const mids = await this.publicClient.allMids()
+      return mids;
+    } catch (error) {
+      console.error("Error in allMids:", error);
+      throw error;
+    }
+  }
   /**
    * Cancellation of the order by its ID.
    */
@@ -210,6 +230,21 @@ export class HyperliquidConnector {
       return response;
     } catch (error) {
       console.error("Error in cancelOrder:", error);
+      throw error;
+    }
+  }
+
+  async getAssetData(symbol: string): Promise<number> {
+    const data = await getAssetData(this.publicClient, symbol)
+    return data.id;
+  }
+
+  async getOpenOrders(address = this.apiKey): Promise<any> {
+    try {
+      const response = this.publicClient.openOrders({user: address as `0x${string}`});
+      return response;
+    } catch (error) {
+      console.error("Error in getOpenOrders:", error);
       throw error;
     }
   }
