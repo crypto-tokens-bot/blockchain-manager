@@ -5,14 +5,17 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:indexer": "ts-node src/scripts/startIndexer.ts",
-    "start:indexer:history": "ts-node src/scripts/startIndexer.ts --with-history"
+    "start:indexer:history": "ts-node src/scripts/startIndexer.ts --with-history",
+    "test:hyperliquid": "ts-node src/scripts/testHyperliquid.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@nktkas/hyperliquid": "^0.17.2",
     "axios": "^1.8.4",
+    "bignumber.js": "^9.2.0",
     "bullmq": "^5.47.1",
     "bybit-api": "^4.1.0",
     "crypto": "^1.0.1",
@@ -20,8 +23,10 @@
     "ethers": "^6.13.5",
     "ioredis": "^5.6.0",
     "pg": "^8.13.3",
+    "viem": "^2.26.0",
     "winston": "^3.17.0",
-    "winston-mongodb": "^6.0.0"
+    "winston-mongodb": "^6.0.0",
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@types/winston": "^2.4.4",
