@@ -120,7 +120,9 @@ export class HyperliquidConnector {
    */
   async getPosition(symbol: string): Promise<any> {
     try {
-      const position = await this.publicClient.openOrders({ user: this.apiKey as `0x${string}`});
+      const position = await this.publicClient.openOrders({
+        user: this.apiKey as `0x${string}`,
+      });
       return position;
     } catch (error) {
       console.error("Error in getPosition:", error);
@@ -133,7 +135,9 @@ export class HyperliquidConnector {
    */
   async getPortfolio(): Promise<any> {
     try {
-      const balance = await this.publicClient.portfolio({ user: this.apiKey as `0x${string}`});
+      const balance = await this.publicClient.portfolio({
+        user: this.apiKey as `0x${string}`,
+      });
       return balance;
     } catch (error) {
       console.error("Error in getPortfolio:", error);
@@ -143,7 +147,7 @@ export class HyperliquidConnector {
 
   async getBalance(): Promise<any> {
     try {
-      const balance = await this.publicClient.allMids()
+      const balance = await this.publicClient.allMids();
       return balance;
     } catch (error) {
       console.error("Error in getPortfolio:", error);
@@ -153,7 +157,7 @@ export class HyperliquidConnector {
 
   async GetAllMids(): Promise<any> {
     try {
-      const mids = await this.publicClient.allMids()
+      const mids = await this.publicClient.allMids();
       return mids;
     } catch (error) {
       console.error("Error in allMids:", error);
@@ -220,7 +224,11 @@ export class HyperliquidConnector {
       .catch(() => undefined);
   }
 
-  async updateLeverage(asset: number, leverage: number, isCross = true): Promise<any> {
+  async updateLeverage(
+    asset: number,
+    leverage: number,
+    isCross = true
+  ): Promise<any> {
     try {
       const response = this.walletClient.updateLeverage({
         asset,
@@ -235,13 +243,15 @@ export class HyperliquidConnector {
   }
 
   async getAssetData(symbol: string): Promise<number> {
-    const data = await getAssetData(this.publicClient, symbol)
+    const data = await getAssetData(this.publicClient, symbol);
     return data.id;
   }
 
   async getOpenOrders(address = this.apiKey): Promise<any> {
     try {
-      const response = this.publicClient.openOrders({user: address as `0x${string}`});
+      const response = this.publicClient.openOrders({
+        user: address as `0x${string}`,
+      });
       return response;
     } catch (error) {
       console.error("Error in getOpenOrders:", error);
