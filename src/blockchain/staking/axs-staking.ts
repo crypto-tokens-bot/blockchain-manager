@@ -1,7 +1,5 @@
 import "dotenv/config";
-import { scheduleJob } from "node-schedule";
 import { ethers } from "ethers";
-import figlet from "figlet";
 import fs from "fs/promises";
 import { formatEther, parseEther } from "ethers";
 
@@ -58,59 +56,6 @@ const axsContract = new ethers.Contract(AXS, erc20ABI, provider);
 const katanaRouter = new ethers.Contract(katanaAdd, katanaABI, provider).connect(wallet) as KatanaRouter;
 const stakingContract = new ethers.Contract(stakingAdd, stakingABI, provider).connect(wallet) as StakingContract;
 const claimsContract = new ethers.Contract(claimsAdd, claimsABI, provider).connect(wallet);
-
-async function main(): Promise<void> {
-  try {
-    console.log(
-      figlet.textSync("RONCompound", {
-        font: "Standard",
-        horizontalLayout: "default",
-        verticalLayout: "default",
-        width: 80,
-        whitespaceBreak: true,
-      })
-    );
-
-
-    const balance = await provider.getBalance(WALLET_ADDRESS);
-    console.log("RON Balance: " + formatEther(balance));
-
-    let claimsExists = false;
-    try {
-      const storedData = JSON.parse(await fs.readFile("./claims.json", "utf-8"));
-      if ("nextClaim" in storedData) {
-        const nextClaim = new Date(storedData.nextClaim);
-        const currentDate = new Date();
-        if (nextClaim > currentDate) {
-          console.log("Restored Claim: " + nextClaim);
-          //scheduleJob(nextClaim, RONCompound);
-          claimsExists = true;
-        }
-      }
-    } catch (error) {
-      console.error("Error reading claims data:", error);
-    }
-
-    if (!claimsExists) {
-      //RONCompound();
-    }
-  } catch (error) {
-    console.error("Main function error:", error);
-  }
-}
-
-// async function RONCompound(): Promise<boolean> {
-//   try {
-//     const rewardBalance: number = await claimRONrewards();
-//     const swapped: boolean = await swapRONforAXS(rewardBalance);
-//     if (swapped) {
-//       return await stakeAXStokens();
-//     }
-//   } catch (error) {
-//     console.error("RONCompound error:", error);
-//   }
-//   return false;
-// }
 
 export async function stakeAXStokens(): Promise<boolean> {
   try {
@@ -187,50 +132,6 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
   return false;
 }
 
-// async function claimRONrewards(): Promise<number> {
-//   try {
-//     const gasRandom = Math.floor(400000 + Math.random() * (99999 - 10000) + 10000);
-//     const overrideOptions = { gasLimit: Math.floor(gasRandom) };
-
-//     const claimTx = await claimsContract.claimPendingRewards(overrideOptions);
-//     const claimReceipt = await claimTx.wait();
-
-//     if (claimReceipt) {
-//       claims.previousClaim = new Date().toString();
-//       console.log("RON CLAIM SUCCESSFUL");
-//       let balance = await provider.getBalance(WALLET_ADDRESS);
-//       const formatted = parseFloat(formatEther(balance));
-//       console.log("RON Balance: " + formatted);
-//       scheduleNext(new Date());
-//       return formatted;
-//     }
-//   } catch (error) {
-//     console.error("claimRONrewards error:", error);
-//     console.log("Claims Attempt Failed! Trying again tomorrow.");
-//     scheduleNext(new Date());
-//   }
-//   return 0;
-// }
-
-// async function scheduleNext(nextDate: Date): Promise<void> {
-//   nextDate.setHours(nextDate.getHours() + 24);
-//   nextDate.setMinutes(nextDate.getMinutes() + 1);
-//   nextDate.setSeconds(nextDate.getSeconds() + 30);
-//   claims.nextClaim = nextDate.toString();
-//   console.log("Next Claim: " + nextDate);
-//   scheduleJob(nextDate, RONCompound);
-//   await storeData();
-// }
-
-async function storeData(): Promise<void> {
-  const data = JSON.stringify(claims, null, 2);
-  try {
-    await fs.writeFile("./claims.json", data);
-    console.log("Data stored:\n" + data);
-  } catch (error) {
-    console.error("storeData error:", error);
-  }
-}
 import path from "path";
 
 async function storeStakeInfo(info: any): Promise<void> {
@@ -249,7 +150,3 @@ async function storeStakeInfo(info: any): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(existingData, null, 2));
   console.log("Stake info saved to file.");
 }
-
-// main().catch((err) => {
-//   console.error("Main error:", err);
-// });
