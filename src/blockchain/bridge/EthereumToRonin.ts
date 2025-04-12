@@ -16,7 +16,7 @@ const wallet = new ethers.Wallet(PRIVATE_KEY as `0x${string}`, provider);
 
 const bridgeContract = new ethers.Contract(CCIP_BRIDGE_ADDRESS, bridgeABI, wallet);
 
-async function bridgeNativeTokens(amount: number): Promise<boolean> {
+export async function bridgeNativeTokens(amount: number): Promise<boolean> {
     try {
         const destinationChainSelector: BigNumberish = "6916147374840168000";
         const feeToken = "0x0000000000000000000000000000000000000000";
