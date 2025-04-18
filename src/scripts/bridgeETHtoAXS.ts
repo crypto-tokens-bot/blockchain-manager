@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { ethers } from "ethers";
-import { bridgeNativeTokens } from "../blockchain/bridge/ethereumToRonin"
+import { bridgeNativeTokens } from "../blockchain/bridge/EthereumToRonin";
 
 async function main() {
-  const amountToBridge = 0.5;
+  const amountToBridge = 0.0013;
   console.log(`Attempting to bridge ${amountToBridge} native tokens...`);
 
   const success = await bridgeNativeTokens(amountToBridge);
