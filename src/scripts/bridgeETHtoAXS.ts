@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { ethers } from "ethers";
-import { bridgeNativeTokens } from "../blockchain/bridge/EthereumToRonin";
+import { bridgeNativeTokens } from "../blockchain/bridge/ethereumToRonin"
 
 async function main() {
   const amountToBridge = 0.5;
