@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { redisConnection } from './redis';
-import { handleDepositEvent } from '../strategies/depositStrategy';
+import { handleDepositEvent } from '../strategies/stakingStrategy';
 
 export const eventWorker = new Worker(
   'event-queue',

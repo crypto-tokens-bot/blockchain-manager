@@ -1,6 +1,6 @@
 import { Queue, Worker, Job } from "bullmq";
 import { redisConnection } from "../queue/redis";
-import { handleDepositEvent } from "../strategies/depositStrategy";
+import { handleDepositEvent } from "./stakingStrategy";
 
 interface ContractEventData {
     event: string;
@@ -14,12 +14,13 @@ const strategyWorker = new Worker<ContractEventData>(
   async (job: Job<ContractEventData>) => {
     if (!job) return;
     const data = job!.data;
+    const { args } = data.data;
     const { event, contract, blockNumber } = job.data;
     console.log(`StrategyRunner: Received event ${event} from contract ${contract} at block ${blockNumber}`);
-
+    
     switch (event) {
       case "Deposited":
-        await handleDepositEvent({ contract, data, blockNumber });
+        await handleDepositEvent({ args, contract, blockNumber });
         break;
       default:
         console.warn(`StrategyRunner: No strategy defined for event ${event}`);
