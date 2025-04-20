@@ -23,7 +23,7 @@ export interface Ticker {
   token_info_url: string | null;
 }
 
-export class coinGeckoClient {
+export class CoinGeckoClient {
   private readonly api: AxiosInstance;
 
   constructor(baseUrl = "https://api.coingecko.com/api/v3") {
