@@ -9,7 +9,8 @@
     "test:hyperliquid": "ts-node src/scripts/testHyperliquid.ts",
     "staking:axs": "ts-node src/scripts/stakingAXS.ts",
     "swap:axs": "ts-node src/scripts/swapRONToAXS.ts",
-    "bridge:tokens": "ts-node src/scripts/runBridgeNativeTokens.ts"
+    "bridge:tokens": "ts-node src/scripts/runBridgeNativeTokens.ts",
+    "demo:futures": "ts-node src/scripts/demoFuturesExchanges.ts"
   },
   "keywords": [],
   "author": "",
