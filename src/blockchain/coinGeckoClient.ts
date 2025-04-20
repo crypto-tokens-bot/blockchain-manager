@@ -63,4 +63,17 @@ export class coinGeckoClient {
     });
     return resp.data;
   }
+  /**
+   * Collect from the ticks all the exchanges where there is a "Futures" market.
+   * We are looking for the word 'futures' either in market.name , or in trade_url
+   */
+  async getFuturesExchangesForToken(coinId: string): Promise<Set<string>> {
+    const tickers = await this.getTickers(coinId);
+    const futuresMarkets = tickers.filter(t => {
+      const name = t.market.name.toLowerCase();
+      const url  = (t.trade_url || '').toLowerCase();
+      return name.includes('futures') || url.includes('futures');
+    });
+    return new Set(futuresMarkets.map(t => t.market.name));
+  }
 }
