@@ -26,6 +26,7 @@ export interface Ticker {
 export class CoinGeckoClient {
   private readonly api: AxiosInstance;
 
+  // example url https://api.coingecko.com/api/v3/ping?x_cg_demo_api_key=YOUR_API_KEY
   constructor(baseUrl = "https://api.coingecko.com/api/v3") {
     this.api = axios.create({ baseURL: baseUrl, timeout: 10_000 });
   }
@@ -69,6 +70,7 @@ export class CoinGeckoClient {
    */
   async getFuturesExchangesForToken(coinId: string): Promise<Set<string>> {
     const tickers = await this.getTickers(coinId);
+    console.log(`tikers:${tickers}`);
     const futuresMarkets = tickers.filter(t => {
       const name = t.market.name.toLowerCase();
       const url  = (t.trade_url || '').toLowerCase();
