@@ -1,42 +1,46 @@
 import { Queue, Worker, Job } from "bullmq";
 import { redisConnection } from "../queue/redis";
 import { handleDepositEvent } from "./stakingStrategy";
+import { DepositPipeline } from "./DepositPipeline";
+import { BridgeStep } from "./steps/bridgeStep";
+import { SwapStep } from "./steps/swapStep";
+import { StakeStep } from "./steps/stakeStep";
+import { bridgeNativeTokens } from "../blockchain/bridge/EthereumToRonin";
+import { stakeAXStokens, swapRONforAXS } from "../blockchain/staking/axs-staking";
 
 interface ContractEventData {
-    event: string;
-    contract: string;
-    data: any;
-    blockNumber: number;
-  }
+  event: string;
+  contract: string;
+  data: any;
+  blockNumber: number;
+}
 
-const strategyWorker = new Worker<ContractEventData>(
+const pipeline = new DepositPipeline(
+  new BridgeStep(bridgeNativeTokens),
+  new SwapStep(swapRONforAXS),
+  new StakeStep(stakeAXStokens)
+);
+
+const strategyWorker = new Worker(
   "event-queue",
-  async (job: Job<ContractEventData>) => {
-    if (!job) return;
-    const data = job!.data;
-    const { args } = data.data;
-    const { event, contract, blockNumber } = job.data;
-    console.log(`StrategyRunner: Received event ${event} from contract ${contract} at block ${blockNumber}`);
-    
-    switch (event) {
-      case "Deposited":
-        await handleDepositEvent({ args, contract, blockNumber });
-        break;
-      default:
-        console.warn(`StrategyRunner: No strategy defined for event ${event}`);
+  async (job) => {
+    if (job.data.event === "Deposited") {
+      await handleDepositEvent(pipeline, job.data);
     }
   },
   { connection: redisConnection }
 );
 
-
 strategyWorker.on("completed", (job) => {
   console.log(`Job ${job.id} processed successfully.`);
 });
 
-strategyWorker.on("failed", (job: Job<ContractEventData> | undefined, err: Error) => {
-  console.error(`Job ${job?.id} failed:`, err);
-});;
+strategyWorker.on(
+  "failed",
+  (job: Job<ContractEventData> | undefined, err: Error) => {
+    console.error(`Job ${job?.id} failed:`, err);
+  }
+);
 
 export function runStrategyRunner() {
   console.log("StrategyRunner is running...");

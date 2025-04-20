@@ -1,7 +1,14 @@
 import { bridgeNativeTokens } from "../blockchain/bridge/EthereumToRonin";
-import { stakeAXStokens, swapRONforAXS } from "../blockchain/staking/axs-staking";
+import {
+  stakeAXStokens,
+  swapRONforAXS,
+} from "../blockchain/staking/axs-staking";
+import { DepositPipeline } from "./DepositPipeline";
 
-export async function handleDepositEvent(data: {
+
+export async function handleDepositEvent(
+  pipeline: DepositPipeline,
+  data: {
   args: any[];
   contract: string;
   blockNumber: number;
@@ -11,7 +18,12 @@ export async function handleDepositEvent(data: {
 
   const usdtAmount = BigInt(usdtAmountRaw.toString());
 
-  const halfAmount = usdtAmount / 2n;
+  //const halfAmount = usdtAmount / 2n;
 
-  await pipeline.run(user, usdtBN);
+  try {
+    await pipeline.run(user, usdtAmount);
+    console.log("✅ DepositPipeline succeeded");
+  } catch (err) {
+    console.error("❌ DepositPipeline failed:", err);
+  }
 }
