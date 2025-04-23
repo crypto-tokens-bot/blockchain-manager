@@ -8,9 +8,7 @@ export async function getQuote(
   amountIn: CurrencyAmount<Token>,
   slippageTolerance: Percent
 ) {
-  // 1. Получаем данные пула (sqrtPrice, liquidity)
-  // 2. Строим Route и Trade
-  // 3. Вычисляем amountOutMin = trade.minimumAmountOut(slippageTolerance)
+  // amountOutMin = trade.minimumAmountOut(slippageTolerance)
   // return { route, trade, amountOutMin };
 }
 

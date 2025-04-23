@@ -1,6 +1,6 @@
 import { Queue, Worker, Job } from "bullmq";
 import { redisConnection } from "../queue/redis";
-import { handleDepositEvent } from "./stakingStrategy";
+import { handleDepositEvent } from "./handleDeposit";
 import { DepositPipeline } from "./DepositPipeline";
 import { BridgeStep } from "./steps/bridgeStep";
 import { SwapStep } from "./steps/swapStep";
@@ -21,27 +21,27 @@ const pipeline = new DepositPipeline(
   new StakeStep(stakeAXStokens)
 );
 
-const strategyWorker = new Worker(
-  "event-queue",
-  async (job) => {
-    if (job.data.event === "Deposited") {
-      await handleDepositEvent(pipeline, job.data);
-    }
-  },
-  { connection: redisConnection }
-);
-
-strategyWorker.on("completed", (job) => {
-  console.log(`Job ${job.id} processed successfully.`);
-});
-
-strategyWorker.on(
-  "failed",
-  (job: Job<ContractEventData> | undefined, err: Error) => {
-    console.error(`Job ${job?.id} failed:`, err);
-  }
-);
-
 export function runStrategyRunner() {
   console.log("StrategyRunner is running...");
+
+  const strategyWorker = new Worker(
+    "event-queue",
+    async (job) => {
+      if (job.data.event === "Deposited") {
+        await handleDepositEvent(pipeline, job.data);
+      }
+    },
+    { connection: redisConnection }
+  );
+  
+  strategyWorker.on("completed", (job) => {
+    console.log(`Job ${job.id} processed successfully.`);
+  });
+  
+  strategyWorker.on(
+    "failed",
+    (job: Job<ContractEventData> | undefined, err: Error) => {
+      console.error(`Job ${job?.id} failed:`, err);
+    }
+  );
 }
