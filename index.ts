@@ -4,6 +4,7 @@ import { MongoDB } from "winston-mongodb";
 import { runIndexer } from './src/indexer/indexer';
 
 import dotenv from "dotenv";
+import { runStrategyRunner } from './src/strategies/StrategyRunner';
 
 dotenv.config();
 
@@ -31,5 +32,9 @@ if (process.env.LOG_TO_DB === "true") {
   );
 }
 
+async function main() {
+  runIndexer();
+  runStrategyRunner();
+}
 
-runIndexer();
+main().catch(console.error);

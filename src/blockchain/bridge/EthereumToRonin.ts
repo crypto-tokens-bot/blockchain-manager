@@ -28,7 +28,8 @@ export async function bridgeNativeTokens(amount: number): Promise<boolean> {
 
         const message = {
             receiver: RONIN_RECIPIENT,
-            feeToken: "0x0000000000000000000000000000000000000000",
+            // feeToken: "0x0000000000000000000000000000000000000000",
+            feeToken,
             tokenAmounts: [{
               amount: tokenAmountValue.toString() // Amount in wei as a string
             }],
