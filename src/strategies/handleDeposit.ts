@@ -3,6 +3,7 @@ import {
   stakeAXStokens,
   swapRONforAXS,
 } from "../blockchain/staking/axs-staking";
+import logger from "../utils/logger";
 import { DepositPipeline } from "./DepositPipeline";
 
 
@@ -14,16 +15,21 @@ export async function handleDepositEvent(
   blockNumber: number;
 }) {
   const [user, mmmAmountRaw, usdtAmountRaw] = data.args;
-  console.log(`Strategy: Received deposit of ${usdtAmountRaw} USDT by ${user}`);
-
+  logger.info("Strategy: Received deposit event", {
+    contract: data.contract,
+    blockNumber: data.blockNumber,
+    user,
+    usdtAmountRaw: usdtAmountRaw.toString(),
+  });
   const usdtAmount = BigInt(usdtAmountRaw.toString());
 
   //const halfAmount = usdtAmount / 2n;
 
   try {
     await pipeline.run(user, usdtAmount);
-    console.log("✅ DepositPipeline succeeded");
+    logger.info("✅ DepositPipeline succeeded", { user, usdtAmount: usdtAmount.toString() });
   } catch (err) {
-    console.error("❌ DepositPipeline failed:", err);
+    logger.error("❌ DepositPipeline failed:", { user, error: err });
+    throw err;
   }
 }
