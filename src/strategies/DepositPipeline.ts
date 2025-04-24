@@ -4,7 +4,7 @@ import { StakeStep } from "./steps/stakeStep";
 import { ethers, BigNumberish } from "ethers";
 import logger from "../utils/logger";
 
-export class DepositPipeline {
+export class StakingStrategyPipeline {
   constructor(
     private bridge: BridgeStep,
     private swap: SwapStep,

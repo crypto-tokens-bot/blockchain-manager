@@ -1,7 +1,7 @@
 import { Queue, Worker, Job } from "bullmq";
 import { redisConnection } from "../queue/redis";
 import { handleDepositEvent } from "./handleDeposit";
-import { DepositPipeline } from "./DepositPipeline";
+import { StakingStrategyPipeline } from "./DepositPipeline";
 import { BridgeStep } from "./steps/bridgeStep";
 import { SwapStep } from "./steps/swapStep";
 import { StakeStep } from "./steps/stakeStep";
@@ -19,7 +19,7 @@ interface ContractEventData {
   blockNumber: number;
 }
 
-const pipeline = new DepositPipeline(
+const pipeline = new StakingStrategyPipeline(
   new BridgeStep(bridgeNativeTokens),
   new SwapStep(swapRONforAXS),
   new StakeStep(stakeAXStokens)
