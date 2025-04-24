@@ -1,7 +1,3 @@
-```
-nvm use 22.4.0
-```
-
 A collection of scripts, services and strategy runners for interacting with smart contracts, DEXs, bridges, staking services, futures exchanges and more. This repository powers:
 
 📥 Indexer: Listens to on-chain events and pushes them into a Redis queue
@@ -17,3 +13,79 @@ A collection of scripts, services and strategy runners for interacting with smar
 ⚙️ Futures Demo: Example of opening a futures position on a CEX
 
 🔍 Helpers & Utilities: CoinGecko client, Bybit deposit address fetcher, logger, etc.
+
+
+### Install dependecies:
+```
+npm install
+```
+
+### For update nvm:
+```
+nvm use 22.4.0
+```
+
+## Scripts
+All scripts live under src/scripts/. You can run them via npm run:
+
+
+Command	Description
+```
+npm run start:indexer
+```
+Start live indexer (listens for on-chain events & enqueues jobs)
+```
+npm run start:indexer:history
+```	
+Replay historical events (with --with-history)
+```
+npm run demo:futures
+```	
+Demo: open a futures position on a CEX (Bybit)
+```
+npm run staking:axs
+```
+Stake all AXS balance into staking contract
+```
+npm run swap:axs
+```	
+Swap RON → AXS via Katana
+```
+npm run bridge:tokens
+```	
+Bridge native ETH → Ronin via CCIP
+```
+npm run test:hyperliquid
+```	
+Quick test of Hyperliquid connector
+
+
+
+## Adding Your Own Steps
+The core Strategy Runner is powered by a Pipeline pattern. You can add your own:
+
+Create a new Step class under src/strategies/steps/<YourStep>.ts
+
+Implement an execute(user: string, amount?: string): Promise<boolean> method
+
+Wire it into a new pipeline in src/runner/StrategyRunner.ts
+
+## Logging
+We use Winston with:
+
+Console (all levels)
+
+logs/errors.log (errors only)
+
+logs/combined.log (everything)
+
+MongoDB (warn+ goes into app_logs collection)
+
+Example:
+
+```ts
+import logger from "../utils/logger";
+
+logger.info("Starting bridge", { user, amount });
+logger.error("Bridge failed", err);
+```
