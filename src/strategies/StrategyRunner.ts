@@ -1,43 +1,65 @@
 import { Queue, Worker, Job } from "bullmq";
 import { redisConnection } from "../queue/redis";
-import { handleDepositEvent } from "./stakingStrategy";
+import { handleDepositEvent } from "./handleDeposit";
+import { DepositPipeline } from "./DepositPipeline";
+import { BridgeStep } from "./steps/bridgeStep";
+import { SwapStep } from "./steps/swapStep";
+import { StakeStep } from "./steps/stakeStep";
+import { bridgeNativeTokens } from "../blockchain/bridge/EthereumToRonin";
+import {
+  stakeAXStokens,
+  swapRONforAXS,
+} from "../blockchain/staking/axs-staking";
+import logger from "../utils/logger";
 
 interface ContractEventData {
-    event: string;
-    contract: string;
-    data: any;
-    blockNumber: number;
-  }
+  event: string;
+  contract: string;
+  data: any;
+  blockNumber: number;
+}
 
-const strategyWorker = new Worker<ContractEventData>(
-  "event-queue",
-  async (job: Job<ContractEventData>) => {
-    if (!job) return;
-    const data = job!.data;
-    const { args } = data.data;
-    const { event, contract, blockNumber } = job.data;
-    console.log(`StrategyRunner: Received event ${event} from contract ${contract} at block ${blockNumber}`);
-    
-    switch (event) {
-      case "Deposited":
-        await handleDepositEvent({ args, contract, blockNumber });
-        break;
-      default:
-        console.warn(`StrategyRunner: No strategy defined for event ${event}`);
-    }
-  },
-  { connection: redisConnection }
+const pipeline = new DepositPipeline(
+  new BridgeStep(bridgeNativeTokens),
+  new SwapStep(swapRONforAXS),
+  new StakeStep(stakeAXStokens)
 );
 
-
-strategyWorker.on("completed", (job) => {
-  console.log(`Job ${job.id} processed successfully.`);
-});
-
-strategyWorker.on("failed", (job: Job<ContractEventData> | undefined, err: Error) => {
-  console.error(`Job ${job?.id} failed:`, err);
-});;
-
 export function runStrategyRunner() {
-  console.log("StrategyRunner is running...");
+  logger.info("StrategyRunner is running");
+
+  const strategyWorker = new Worker(
+    "event-queue",
+    async (job) => {
+      const { id, data } = job;
+      logger.debug("Job received");
+
+      if (job.data.event === "Deposited") {
+        try {
+          await handleDepositEvent(pipeline, data);
+          await job.updateProgress(100);
+        } catch (err) {
+          logger.error("Error in handleDepositEvent", {
+            jobId: id,
+            error: err,
+          });
+          throw err; // so that BullMQ marks the task as failed
+        }
+      } else {
+        logger.warn("No strategy for event", { jobId: id, event: data.event });
+      }
+    },
+    { connection: redisConnection }
+  );
+
+  strategyWorker.on("completed", (job) => {
+    logger.info("Job processed successfully", { jobId: job.id });
+  });
+
+  strategyWorker.on(
+    "failed",
+    (job: Job<ContractEventData> | undefined, err: Error) => {
+      logger.error("Job failed", { jobId: job?.id, error: err });
+    }
+  );
 }

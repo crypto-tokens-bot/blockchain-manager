@@ -61,12 +61,17 @@ export async function stakeAXStokens(): Promise<boolean> {
   try {
     const balance = await axsContract.balanceOf(WALLET_ADDRESS);
     const formattedBal = parseFloat(formatEther(balance));
-    console.log("AXS Balance: " + formattedBal);
+    logger.info("Stake: current AXS balance", { balance });
 
-    if (formattedBal < 0.01) throw new Error("Staking value too small!");
+
+    if (formattedBal < 0.01) {
+      logger.warn("Stake: balance too small to stake", { formattedBal });
+      throw new Error("Staking value too small!");
+    }
 
     const randomGas = 400000 + Math.random() * (99999 - 10000) + 10000;
     const overrideOptions = { gasLimit: Math.floor(randomGas) };
+    logger.info("Stake: submitting stake tx", { amount: balance.toString(), randomGas });
 
     let amount = balance;
     console.log("Staking AXS Tokens...");
@@ -89,6 +94,7 @@ export async function stakeAXStokens(): Promise<boolean> {
         blockNumber: receipt.blockNumber,
       };
       await storeStakeInfo(stakeInfo);
+      logger.info("Stake: completed successfully", stakeInfo);
 
       return true;
     }
@@ -100,12 +106,16 @@ export async function stakeAXStokens(): Promise<boolean> {
 
 export async function swapRONforAXS(amount: number): Promise<boolean> {
   try {
-    if (amount < 0.04) throw new Error("Conversion value too small!");
+    if (amount < 0.04) {
+      logger.warn("Swap: amount too small", { amount });
+      throw new Error("Conversion value too small!");
+    }
 
     const gasRandom = Math.floor(Math.random() * (500000 - 400001) + 400000);
     const amountIn = parseEther(amount.toString());
     const path = [WRON, WETH, AXS];
 
+    logger.info("Swap: fetching amounts out", { amountIn: amountIn.toString(), path });
     const result = await katanaRouter.getAmountsOut(amountIn, path);
 
     const amountOut = Number(ethers.formatEther(result[2])) * 0.99;
@@ -113,7 +123,14 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
 
     const deadline = Math.floor(Date.now() / 1000) + 60 * 5; // 5 min
 
-    console.log(`Swapping: ${amount} RON, For: ~ ${amountOut} AXS`);
+    logger.info("Swap: submitting swap tx", {
+      amountIn: amountIn.toString(),
+      amountOutMin: amountOutMin.toString(),
+      path,
+      deadline,
+      gasRandom
+    });
+
     const swapTx = await katanaRouter.swapExactRONForTokens(
       amountOutMin,
       path,
@@ -123,16 +140,17 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
     );
     const swapReceipt = await swapTx.wait();
     if (swapReceipt) {
-      console.log("RON SWAP SUCCESSFUL");
+      console.info("RON SWAP SUCCESSFUL");
       return true;
     }
   } catch (error) {
-    console.error("swapRONforAXS error:", error);
+    logger.error("Swap: error swapping tokens", { error });
   }
   return false;
 }
 
 import path from "path";
+import logger from "../../utils/logger";
 
 async function storeStakeInfo(info: any): Promise<void> {
   const filePath = path.resolve(__dirname, "stake-info.json");
@@ -148,5 +166,5 @@ async function storeStakeInfo(info: any): Promise<void> {
   }
   existingData.push(info);
   await fs.writeFile(filePath, JSON.stringify(existingData, null, 2));
-  console.log("Stake info saved to file.");
+  logger.info("Stake info saved to file.", { filePath, info });
 }

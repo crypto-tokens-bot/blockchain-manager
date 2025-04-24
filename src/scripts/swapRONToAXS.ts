@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { swapRONforAXS } from "../blockchain/staking/axs-staking";
 
-
 async function main() {
     const amountArg = process.argv[2];
     const amount = amountArg ? parseFloat(amountArg) : 0.05;
