@@ -81,11 +81,37 @@ logs/combined.log (everything)
 
 MongoDB (warn+ goes into app_logs collection)
 
-Example:
-
+#### Example:
 ```ts
 import logger from "../utils/logger";
 
 logger.info("Starting bridge", { user, amount });
 logger.error("Bridge failed", err);
 ```
+
+
+## Strategy Staking + Hedging
+Briefly about the strategy with AXS stacking
+
+#### Deposit Event:
+- When a user deposits USDT/USDC into the pool (Deposited event), our "Runner" processes this event.
+
+#### We divide the funds in half
+- Half of the deposit goes to the inter—network bridge (Ethereum → Ronin)
+
+- the other half remains on Ronin for exchange.
+
+#### Bridge and swap
+- We transfer the required amount of ETH/USDT → Ronin via CCIP-bridge,
+- Change the received RON → AXS to Ronin DEX (Katana/Uniswap).
+
+#### AXS staking
+- Automatically calling the stake(amount) function in the AXS staking contract,
+- We record the transaction and save the data (TxHash, final balance) for the report.
+
+#### Result
+- The user receives income in the form of AXS rewards (APY ~28-35%),
+- Everything is done without manual intervention, taking into account the gas reserve and kickbacks.
+
+You can check staking AXS hear:
+https://stake.axieinfinity.com/
