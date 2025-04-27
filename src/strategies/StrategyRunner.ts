@@ -11,6 +11,7 @@ import {
   swapRONforAXS,
 } from "../blockchain/staking/axs-staking";
 import logger from "../utils/logger";
+import { BybitAdapter } from "../blockchain/exchanges/BybitAdapter";
 
 interface ContractEventData {
   event: string;
@@ -19,10 +20,14 @@ interface ContractEventData {
   blockNumber: number;
 }
 
+const bybit = new BybitAdapter("API_KEY", "API_SECRET");
+
 const pipeline = new StakingStrategyPipeline(
+  "ETH/USDT",
   new BridgeStep(bridgeNativeTokens),
   new SwapStep(swapRONforAXS),
-  new StakeStep(stakeAXStokens)
+  new StakeStep(stakeAXStokens),
+  bybit
 );
 
 export function runStrategyRunner() {
