@@ -29,22 +29,6 @@ export async function executeSwap(
   return signer.sendTransaction({ to: SwapRouter.ADDRESS, data: calldata, value });
 }
 
-// src/blockchain/dex/uniswap.ts
-
-import { ethers } from "ethers";
-import {
-  Token,
-  CurrencyAmount,
-  TradeType,
-  Percent,
-} from "@uniswap/sdk-core";
-import {
-  Pool,
-  Route,
-  Trade,
-  SwapRouter,
-  SwapOptions,
-} from "@uniswap/v3-sdk";
 import { abi as IUniswapV3PoolABI } from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
 import { abi as QuoterABI } from "@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json";
 
