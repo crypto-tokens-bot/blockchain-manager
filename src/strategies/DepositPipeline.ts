@@ -43,7 +43,7 @@ export class StakingStrategyPipeline {
       logger.debug("Open position execute");
       await this.exchange_client.createMarket({
         baseSize: Number.parseInt(halfStr),
-        side: OrderSide.Buy,
+        side: OrderSide.Sell,
         symbol: this.symbol
       });
 
