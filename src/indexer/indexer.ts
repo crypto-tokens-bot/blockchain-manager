@@ -8,9 +8,25 @@ dotenv.config();
 
 // const WS_URL = process.env.WS_URL!;
 // const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
+const erc20Abi = [
+  "event Transfer(address indexed from, address indexed to, uint256 value)"
+];
 
+const argv = process.argv.slice(2);
+const cliNetIndex = argv.findIndex((a) => a === "--network");
+const networkName =
+  cliNetIndex !== -1 && argv[cliNetIndex + 1]
+    ? argv[cliNetIndex + 1]
+    : process.env.NETWORK || "sepolia";
 
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!, "sepolia");
+if (!process.env.RPC_URL) {
+  throw new Error("RPC_URL must be set in .env or via flag");
+}
+
+const provider = new ethers.JsonRpcProvider(
+  process.env.RPC_URL,
+  networkName as any
+);
 
 export async function runIndexer() {
   logger.info("Starting indexer", { contracts: CONTRACTS_TO_INDEX.length });
