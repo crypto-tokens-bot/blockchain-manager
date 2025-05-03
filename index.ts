@@ -5,6 +5,7 @@ import { runIndexer } from './src/indexer/indexer';
 
 import dotenv from "dotenv";
 import { runStrategyRunner } from './src/strategies/StrategyRunner';
+import { ethers } from 'ethers';
 
 dotenv.config();
 
@@ -31,9 +32,21 @@ if (process.env.LOG_TO_DB === "true") {
     })
   );
 }
+const isTest = process.env.NODE_ENV === "test";
+
+const RPC_URL = isTest
+  ? process.env.TEST_RPC_URL!
+  : process.env.RPC_URL! 
+
+if (!RPC_URL) {
+    throw new Error("TEST_RPC_URL or RPC_URL not found in .env");
+}
 
 async function main() {
-  runIndexer();
+  const provider = new ethers.JsonRpcProvider(
+    RPC_URL
+  );
+  runIndexer(provider);
   runStrategyRunner();
 }
 

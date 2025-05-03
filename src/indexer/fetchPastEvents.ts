@@ -26,7 +26,7 @@ async function fetchLogsInRange(
   while (start <= toBlock) {
     let end = Math.min(start + maxRange - 1, toBlock);
 
-    logger.info("Indexer: fetching logs", { from: start, to: end });
+    logger.debug("Indexer: fetching logs", { from: start, to: end });
 
     try {
       const partial = await provider.getLogs({
@@ -56,8 +56,8 @@ async function fetchLogsInRange(
  * Pull out all the old Deposited events for the specified block range,
  * parse them and push them to the event queue
  */
-export async function fetchPastEvents(contractAddress: string, abi: string) {
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!, "sepolia");
+export async function fetchPastEvents(provider: JsonRpcProvider, contractAddress: string, abi: string) {
+  // const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!, "sepolia");
   const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const events = contract.getEvent("Deposited");
@@ -103,7 +103,7 @@ export async function fetchPastEvents(contractAddress: string, abi: string) {
     });
   }
 }
-async function saveToQueue(data: any) {
+export async function saveToQueue(data: any) {
   const processedData = JSON.parse(
     JSON.stringify(data, (key, value) =>
       typeof value === "bigint" ? value.toString() : value
