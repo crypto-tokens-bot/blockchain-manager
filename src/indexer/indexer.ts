@@ -3,39 +3,18 @@ import dotenv from "dotenv";
 import { CONTRACTS_TO_INDEX, IndexerConfig } from "./registry";
 import { eventQueue } from '../queue/eventQueue';
 import logger from "../utils/logger";
-
+import { parseArgs } from '../utils/parser'
+import { saveToQueue } from "./fetchPastEvents";
 dotenv.config();
 
-// const WS_URL = process.env.WS_URL!;
-// const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
-const erc20Abi = [
-  "event Transfer(address indexed from, address indexed to, uint256 value)"
-];
-
-const argv = process.argv.slice(2);
-const cliNetIndex = argv.findIndex((a) => a === "--network");
-const networkName =
-  cliNetIndex !== -1 && argv[cliNetIndex + 1]
-    ? argv[cliNetIndex + 1]
-    : process.env.NETWORK || "sepolia";
-
-if (!process.env.RPC_URL) {
-  throw new Error("RPC_URL must be set in .env or via flag");
-}
-
-const provider = new ethers.JsonRpcProvider(
-  process.env.RPC_URL,
-  networkName as any
-);
-
-export async function runIndexer() {
+export async function runIndexer(provider: ethers.JsonRpcProvider) {
   logger.info("Starting indexer", { contracts: CONTRACTS_TO_INDEX.length });
   for (const contractConfig of CONTRACTS_TO_INDEX) {
-    setupContractListener(contractConfig);
+    await setupContractListener(provider, contractConfig);
   }
 }
 
-function setupContractListener(config: IndexerConfig) {
+function setupContractListener(provider: ethers.JsonRpcProvider, config: IndexerConfig) {
   logger.debug(`setupContractListener config:{}`, config);
   const { name, address, abi, events } = config;
   const correctAddress = ethers.getAddress(address);
@@ -45,32 +24,28 @@ function setupContractListener(config: IndexerConfig) {
 
   events.forEach((eventName) => {
     contract.on(eventName, (...args) => {
-      const event = args[args.length - 1];
+      const payload = args[args.length - 1] as {
+        blockNumber?: number;
+        log: { blockNumber: number; transactionHash: string };
+      };
+      let blockNumber =
+        payload.blockNumber ?? payload.log?.blockNumber;
+
       logger.info("Contract event received", {
         contract: name,
         event: eventName,
-        blockNumber: event.blockNumber,
+        blockNumber,
         args: args.map(a => typeof a === "bigint" ? a.toString() : a)
       });
       saveToQueue({
         contract: name,
         event: eventName,
         args,
-        blockNumber: event.blockNumber
+        blockNumber,
       }).catch(err => {
         logger.error("Failed to enqueue event", { error: err, contract: name, event: eventName });
       });
     });
   });
   logger.info("Listening for events", { contract: name, address: correctAddress });
-}
-
-async function saveToQueue(data: any) {
-  const processedData = JSON.parse(
-    JSON.stringify(data, (key, value) =>
-      typeof value === "bigint" ? value.toString() : value
-    )
-  );
-  await eventQueue.add('contract-event', processedData);
-  logger.debug("Event enqueued", { jobId: processedData.blockNumber, contract: processedData.contract });
 }
