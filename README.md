@@ -115,3 +115,9 @@ Briefly about the strategy with AXS stacking
 
 You can check staking AXS hear:
 https://stake.axieinfinity.com/
+
+
+### Indexer run:
+```
+ts-node src/scripts/startIndexer.ts --with-history true > logs/log.log
+```

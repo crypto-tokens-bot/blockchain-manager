@@ -14,7 +14,7 @@ export async function runIndexer(provider: ethers.JsonRpcProvider) {
   }
 }
 
-function setupContractListener(provider: ethers.JsonRpcProvider, config: IndexerConfig) {
+export function setupContractListener(provider: ethers.JsonRpcProvider, config: IndexerConfig) {
   logger.debug(`setupContractListener config:{}`, config);
   const { name, address, abi, events } = config;
   const correctAddress = ethers.getAddress(address);
