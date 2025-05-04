@@ -121,3 +121,9 @@ https://stake.axieinfinity.com/
 ```
 ts-node src/scripts/startIndexer.ts --with-history true > logs/log.log
 ```
+
+### Indexer + strategy:
+```
+npm run start:strategy
+npm run start:indexer
+```
