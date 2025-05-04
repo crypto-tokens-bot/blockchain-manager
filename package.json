@@ -6,6 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:indexer": "ts-node src/scripts/startIndexer.ts",
     "start:indexer:history": "ts-node src/scripts/startIndexer.ts --with-history",
+    "start:strategy" : "ts-node src/scripts/startStrategyRunner.ts",
     "test:hyperliquid": "ts-node src/scripts/testHyperliquid.ts",
     "staking:axs": "ts-node src/scripts/stakingAXS.ts",
     "swap:axs": "ts-node src/scripts/swapRONToAXS.ts",
