@@ -30,7 +30,7 @@ async function start() {
         logger.info("Fetching past events", { contract: cfg.name });
         const { name, address, abi, events } = cfg;
         const correctAddress = ethers.getAddress(
-          "0xc9Cf4D74BF240B26ae1b613f85696eE8DA0aD549" // need to get rid of the hardcore 
+          "0xc9Cf4D74BF240B26ae1b613f85696eE8DA0aD549" // need to get rid of the hardcore
         );
         await fetchPastEvents(provider, correctAddress, abi);
       } catch (err) {
