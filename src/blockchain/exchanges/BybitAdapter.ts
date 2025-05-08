@@ -5,11 +5,11 @@ import { ethers } from "ethers";
 
 export class BybitAdapter implements IExchangeAdapter {
   constructor(private apiKey: string, private apiSecret: string) {}
-  async createLimit(params: OrderParams): Promise<OrderResult> {
+  public async createLimit(params: OrderParams): Promise<OrderResult> {
         throw new Error("Method not implemented.");
     }
 
-  async createMarket(params: OrderParams): Promise<OrderResult> {
+  public async createMarket(params: OrderParams): Promise<OrderResult> {
     throw new Error("Method not implemented.");
   }
 }
