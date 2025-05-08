@@ -4,6 +4,7 @@ import { StakeStep } from "./steps/stakeStep";
 import { ethers, BigNumberish } from "ethers";
 import logger from "../utils/logger";
 import { IExchangeAdapter, OrderParams, OrderSide } from "../blockchain/exchanges/IExchangeAdapter";
+import { PositionStep } from "./steps/positionStep";
 
 export class StakingStrategyPipeline {
   constructor(
@@ -11,7 +12,7 @@ export class StakingStrategyPipeline {
     private bridge: BridgeStep,
     private swap: SwapStep,
     private stake: StakeStep,
-    private exchange_client: IExchangeAdapter
+    private positionStep: PositionStep
   ) {}
 
   /**
@@ -37,15 +38,11 @@ export class StakingStrategyPipeline {
       logger.debug("SwapStep.execute", { user, amount: halfStr });
       await this.swap.execute(user, halfStr);
 
+      logger.debug("Open position step execute", {amount: halfStr})
+      await this.positionStep.execute("AXSUSDT", halfStr);
+
       logger.debug("StakeStep.execute", { user });
       await this.stake.execute(user);
-
-      logger.debug("Open position execute");
-      await this.exchange_client.createMarket({
-        baseSize: Number.parseInt(halfStr),
-        side: OrderSide.Sell,
-        symbol: this.symbol
-      });
 
       logger.info("✅ Pipeline completed successfully", { user });
     } catch (err) {
