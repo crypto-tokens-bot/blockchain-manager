@@ -6,13 +6,12 @@ import {
   OrderSide,
 } from "./IExchangeAdapter";
 import { ethers } from "ethers";
-import axios from 'axios';
-import crypto from 'crypto';
-
+import axios from "axios";
+import crypto from "crypto";
 
 export class BybitAdapter implements IExchangeAdapter {
-  private readonly baseUrl = 'https://api.bybit.com';
-  private readonly futuresEndpoint = '/v5/order/create';
+  private readonly baseUrl = "https://api.bybit.com";
+  private readonly futuresEndpoint = "/v5/order/create";
 
   constructor(private apiKey: string, private apiSecret: string) {}
   public async createLimit(params: OrderParams): Promise<OrderResult> {
@@ -58,25 +57,30 @@ export class BybitAdapter implements IExchangeAdapter {
 
   public async createMarket(params: OrderParams): Promise<OrderResult> {
     const symbol = formatSymbol(params.symbol);
-    
+
     const requestParams = {
       symbol,
-      side: params.side === OrderSide.Buy ? 'Buy' : 'Sell',
-      orderType: 'Market',
+      side: params.side === OrderSide.Buy ? "Buy" : "Sell",
+      orderType: "Market",
       qty: params.baseSize.toString(),
-      category: 'linear',
+      category: "linear",
       positionIdx: 0,
+      ...extractAdditionalParams(params),
     };
-    
+
     try {
-      const response = await this.sendSignedRequest('POST', this.futuresEndpoint, requestParams);
-      
+      const response = await this.sendSignedRequest(
+        "POST",
+        this.futuresEndpoint,
+        requestParams
+      );
+
       if (response.retCode === 0) {
         return {
           orderId: response.result.orderId,
-          orderType: 'market',
+          orderType: "market",
           status: mapOrderStatus(response.result.orderStatus),
-          filledSize: parseFloat(response.result.cumExecQty || '0')
+          filledSize: parseFloat(response.result.cumExecQty || "0"),
         };
       } else {
         throw new Error(`Bybit API error: ${response.retMsg}`);
@@ -95,81 +99,114 @@ export class BybitAdapter implements IExchangeAdapter {
     params: Record<string, any>
   ): Promise<any> {
     const timestamp = Date.now().toString();
-    
-    const queryString = buildQueryString(params);
-    
-    const signString = timestamp + this.apiKey + queryString;
-    
+    const recvWindow = "5000";
+
+    //const queryString = buildQueryString(params);
+    const requestParams = { ...params };
+    let signString;
+    let postBody;
+
+    //const signString = timestamp + this.apiKey + recvWindow + queryString;
+
+    if (method === "GET") {
+      const queryString = Object.keys(requestParams)
+        .sort()
+        .map((key) => `${key}=${encodeURIComponent(requestParams[key])}`)
+        .join("&");
+
+      signString = timestamp + this.apiKey + recvWindow + queryString;
+      postBody = null;
+    } else {
+      const sortedParams: Record<string, any> = {};
+      Object.keys(requestParams)
+        .sort()
+        .forEach((key) => {
+          sortedParams[key] = requestParams[key];
+        });
+
+      const jsonParams = JSON.stringify(sortedParams);
+      signString = timestamp + this.apiKey + recvWindow + jsonParams;
+      postBody = sortedParams;
+    }
     const signature = crypto
-      .createHmac('sha256', this.apiSecret)
+      .createHmac("sha256", this.apiSecret)
       .update(signString)
-      .digest('hex');
-    
+      .digest("hex");
+
     const headers = {
-      'X-BAPI-API-KEY': this.apiKey,
-      'X-BAPI-TIMESTAMP': timestamp,
-      'X-BAPI-SIGN': signature,
-      'Content-Type': 'application/json'
+      "X-BAPI-API-KEY": this.apiKey,
+      "X-BAPI-TIMESTAMP": timestamp,
+      "X-BAPI-SIGN": signature,
+      "X-BAPI-RECV-WINDOW": recvWindow,
+      "Content-Type": "application/json",
     };
-    
+    console.log("Request details:");
+    console.log("- Method:", method);
+    console.log("- Endpoint:", endpoint);
+    console.log("- Params:", JSON.stringify(requestParams));
+    console.log("- Sign string:", signString);
+
     try {
       let response;
-      if (method === 'GET') {
+      if (method === "GET") {
+        const queryParams = Object.keys(requestParams)
+          .map((key) => `${key}=${encodeURIComponent(requestParams[key])}`)
+          .join("&");
+
         response = await axios.get(
-          `${this.baseUrl}${endpoint}?${queryString}`,
+          `${this.baseUrl}${endpoint}?${queryParams}`,
           { headers }
         );
       } else {
-        response = await axios.post(
-          `${this.baseUrl}${endpoint}`,
-          params,
-          { headers }
-        );
+        response = await axios.post(`${this.baseUrl}${endpoint}`, postBody, {
+          headers,
+        });
       }
-      
+
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        throw new Error(`Bybit API error: ${JSON.stringify(error.response.data)}`);
+        console.error("API Response Error:", error.response.data);
+        throw new Error(
+          `Bybit API error: ${JSON.stringify(error.response.data)}`
+        );
       }
       throw error;
     }
   }
-  
 }
 
-
 function formatSymbol(symbol: string): string {
-  return symbol.replace('/', '');
+  return symbol.replace("/", "");
 }
 
 function extractAdditionalParams(params: OrderParams): Record<string, any> {
   const additionalParams: Record<string, any> = {};
-  
-  const handledKeys = ['symbol', 'baseSize', 'price', 'side'];
-  
+
+  const handledKeys = ["symbol", "baseSize", "price", "side"];
+
   Object.keys(params)
-    .filter(key => !handledKeys.includes(key))
-    .forEach(key => {
+    .filter((key) => !handledKeys.includes(key))
+    .forEach((key) => {
       additionalParams[key] = params[key];
     });
-  
+
   return additionalParams;
 }
 
 function mapOrderStatus(bybitStatus: string): "open" | "filled" | "rejected" {
   const statusMap: Record<string, "open" | "filled" | "rejected"> = {
-    'New': 'open',
-    'Created': 'open',
-    'Untriggered': 'open',
-    'Rejected': 'rejected',
-    'PartiallyFilled': 'open',
-    'Filled': 'filled',
-    'Cancelled': 'rejected',
-    'PendingCancel': 'open'
+    New: "open",
+    Created: "open",
+    Untriggered: "open",
+    Rejected: "rejected",
+    PartiallyFilled: "open",
+    Filled: "filled",
+    Cancelled: "rejected",
+    PendingCancel: "open",
   };
-  
-  return statusMap[bybitStatus] || 'rejected';
+
+  return statusMap[bybitStatus] || "rejected";
 }
 
 function buildQueryString(params: Record<string, any>): string {
@@ -179,8 +216,8 @@ function buildQueryString(params: Record<string, any>): string {
       result[key] = params[key];
       return result;
     }, {});
-  
+
   return Object.entries(sortedParams)
     .map(([key, value]) => `${key}=${value}`)
-    .join('&');
+    .join("&");
 }
