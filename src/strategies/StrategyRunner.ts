@@ -1,7 +1,7 @@
 import { Queue, Worker, Job } from "bullmq";
 import { redisConnection } from "../queue/redis";
 import { handleDepositEvent } from "./handleDeposit";
-import { StakingStrategyPipeline } from "./DepositPipeline";
+import { StakingStrategyPipeline } from "./StakingStrategyPipeline";
 import { BridgeStep } from "./steps/bridgeStep";
 import { SwapStep } from "./steps/swapStep";
 import { StakeStep } from "./steps/stakeStep";
@@ -12,6 +12,7 @@ import {
 } from "../blockchain/staking/axs-staking";
 import logger from "../utils/logger";
 import { BybitAdapter } from "../blockchain/exchanges/BybitAdapter";
+import { PositionStep } from "./steps/positionStep";
 
 interface ContractEventData {
   event: string;
@@ -27,7 +28,7 @@ const pipeline = new StakingStrategyPipeline(
   new BridgeStep(bridgeNativeTokens),
   new SwapStep(swapRONforAXS),
   new StakeStep(stakeAXStokens),
-  bybit
+  new PositionStep(bybit)
 );
 
 export function runStrategyRunner() {

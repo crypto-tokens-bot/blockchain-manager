@@ -4,7 +4,7 @@ import {
   swapRONforAXS,
 } from "../blockchain/staking/axs-staking";
 import logger from "../utils/logger";
-import { StakingStrategyPipeline } from "./DepositPipeline";
+import { StakingStrategyPipeline } from "./StakingStrategyPipeline";
 
 
 export async function handleDepositEvent(

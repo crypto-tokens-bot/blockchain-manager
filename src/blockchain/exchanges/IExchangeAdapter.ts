@@ -22,3 +22,19 @@ export interface IExchangeAdapter {
   createMarket(params: OrderParams): Promise<OrderResult>;
   createLimit(params: OrderParams): Promise<OrderResult>;
 }
+
+export interface PositionInfo {
+  symbol: string;
+  side: 'Buy' | 'Sell';
+  size: number;
+  entryPrice: number;
+  leverage: number;
+  markPrice: number;
+  liquidationPrice: number;
+  unrealisedPnl: number;
+  marginType: string;
+  positionValue: number;
+  positionIdx: number;
+  createdTime: string;
+  updatedTime: string;
+}
