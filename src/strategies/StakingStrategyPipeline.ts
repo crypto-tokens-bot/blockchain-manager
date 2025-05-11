@@ -5,15 +5,20 @@ import { ethers, BigNumberish } from "ethers";
 import logger from "../utils/logger";
 import { IExchangeAdapter, OrderParams, OrderSide } from "../blockchain/exchanges/IExchangeAdapter";
 import { PositionStep } from "./steps/positionStep";
+import { MetricsWriter } from "../monitoring-system/MetricsWriter";
 
 export class StakingStrategyPipeline {
+  private metricsWriter: MetricsWriter;
+  
   constructor(
     public symbol: string,
     private bridge: BridgeStep,
     private swap: SwapStep,
     private stake: StakeStep,
     private positionStep: PositionStep
-  ) {}
+  ) {
+    this.metricsWriter = MetricsWriter.getInstance();
+  }
 
   /**
    * @param user       Ethereum/Ronin address

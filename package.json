@@ -11,7 +11,9 @@
     "staking:axs": "ts-node src/scripts/stakingAXS.ts",
     "swap:axs": "ts-node src/scripts/swapRONToAXS.ts",
     "bridge:tokens": "ts-node src/scripts/runBridgeNativeTokens.ts",
-    "demo:futures": "ts-node src/scripts/demoFuturesExchanges.ts"
+    "demo:futures": "ts-node src/scripts/demoFuturesExchanges.ts",
+    "start:monitor": "ts-node src/monitoring-system/startMonitoring.ts",
+    "dev": "concurrently \"npm run start:monitor\" \"npm run start:indexer\""
   },
   "keywords": [],
   "author": "",
@@ -43,6 +45,7 @@
     "@types/figlet": "^1.7.0",
     "@types/node-schedule": "^2.1.7",
     "@types/winston": "^2.4.4",
+    "concurrently": "^9.1.2",
     "ts-node": "^10.9.2"
   }
 }

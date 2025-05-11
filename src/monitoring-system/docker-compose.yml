@@ -38,6 +38,13 @@ services:
     volumes:
       - redis-data:/data
 
+  # monitor:
+  #   build: .
+  #   command: ts-node src/scripts/startMonitoring.ts
+  #   depends_on:
+  #     - redis
+  #     - influxdb
+
 volumes:
   influxdb-data:
   grafana-data:

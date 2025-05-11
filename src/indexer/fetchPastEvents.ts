@@ -3,6 +3,7 @@ import { CONTRACTS_TO_INDEX } from "./registry";
 import { eventQueue } from "../queue/eventQueue";
 import { JsonRpcProvider, Log, Filter } from "ethers";
 import logger from "../utils/logger";
+import { MetricsWriter } from '../monitoring-system/MetricsWriter';
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!);
 
@@ -111,4 +112,7 @@ export async function saveToQueue(data: any) {
   );
   await eventQueue.add("contract-event", processedData);
   console.info("Event saved to queue:", data);
+
+  const metricsWriter = MetricsWriter.getInstance();
+  await metricsWriter.writeContractEvent(data);
 }

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { ethers } from "ethers";
 import fs from "fs/promises";
 import { formatEther, parseEther } from "ethers";
+import { MetricsWriter } from '../../monitoring-system/MetricsWriter';
 
 interface Claims {
     previousClaim: string;
@@ -141,6 +142,17 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
     const swapReceipt = await swapTx.wait();
     if (swapReceipt) {
       console.info("RON SWAP SUCCESSFUL");
+
+      const metricsWriter = MetricsWriter.getInstance();
+      await metricsWriter.writeSwapInfo({
+        timestamp: new Date().toISOString(),
+        txHash: swapTx.hash,
+        amountIn: amount,
+        amountOut: amountOut,
+        priceImpact: ((amount - amountOut) / amount) * 100,
+        gasUsed: swapReceipt.gasUsed?.toString() || '0'
+      });
+      
       return true;
     }
   } catch (error) {
@@ -167,4 +179,7 @@ async function storeStakeInfo(info: any): Promise<void> {
   existingData.push(info);
   await fs.writeFile(filePath, JSON.stringify(existingData, null, 2));
   logger.info("Stake info saved to file.", { filePath, info });
+
+  const metricsWriter = MetricsWriter.getInstance();
+  await metricsWriter.writeStakingInfo(info);
 }
