@@ -21,6 +21,7 @@ export interface OrderResult {
 export interface IExchangeAdapter {
   createMarket(params: OrderParams): Promise<OrderResult>;
   createLimit(params: OrderParams): Promise<OrderResult>;
+  getPosition(symbol: string): Promise<PositionInfo | null>;
 }
 
 export interface PositionInfo {
