@@ -2,25 +2,48 @@ import "dotenv/config";
 import { ethers } from "ethers";
 import fs from "fs/promises";
 import { formatEther, parseEther } from "ethers";
-import { MetricsWriter } from '../../monitoring-system/MetricsWriter';
+import { MetricsWriter } from "../../monitoring-system/MetricsWriter";
 
 interface Claims {
-    previousClaim: string;
-    nextClaim: string;
+  previousClaim: string;
+  nextClaim: string;
 }
-  
+
 let claims: Claims = {
-    previousClaim: "",
-    nextClaim: "",
+  previousClaim: "",
+  nextClaim: "",
 };
 export type StakingContract = ethers.Contract & {
   stake: (
     amount: ethers.BigNumberish,
     overrides?: ethers.Overrides
   ) => Promise<ethers.TransactionResponse>;
+
+  unstake: (
+    amount: ethers.BigNumberish,
+    overrides?: ethers.Overrides
+  ) => Promise<ethers.TransactionResponse>;
+
+  unstakeAll: (
+    overrides?: ethers.Overrides
+  ) => Promise<ethers.TransactionResponse>;
+
+  getStakingAmount: (user: string) => Promise<ethers.BigNumberish>;
 };
+
+export type ClaimContract = ethers.Contract & {
+  claimPendingRewards: (
+    overrides?: ethers.Overrides
+  ) => Promise<ethers.TransactionResponse>;
+
+  getPendingRewards: (user: string) => Promise<ethers.BigNumberish>;
+};
+
 type KatanaRouter = ethers.Contract & {
-  getAmountsOut(amountIn: ethers.BigNumberish, path: string[]): Promise<ethers.BigNumberish[]>;
+  getAmountsOut(
+    amountIn: ethers.BigNumberish,
+    path: string[]
+  ): Promise<ethers.BigNumberish[]>;
   swapExactRONForTokens(
     amountOutMin: ethers.BigNumberish,
     path: string[],
@@ -37,33 +60,50 @@ const PRIV_KEY: string = process.env.USER_PRIVATE_KEY || "";
 
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-const stakingABI = ["function stake(uint256) external"];
-const claimsABI = ["function claimPendingRewards()"];
+const stakingABI = [
+  "function stake(uint256) external",
+  "function unstake(uint256) external",
+  "function unstakeAll() external",
+  "function getStakingAmount(address) view returns (uint256)",
+];
+const claimsABI = ["function claimPendingRewards() external", "function getPendingRewards(address) view returns (uint256)"];
 const erc20ABI = ["function balanceOf(address) view returns (uint256)"];
 const katanaABI = [
   "function getAmountsOut(uint256 amountIn, address[] calldata path) external view returns (uint256[] memory)",
   "function swapExactRONForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external payable returns (uint256[] memory)",
 ];
 
+
 const AXS = "0x97a9107c1793bc407d6f527b77e7fff4d812bece";
 const WRON = "0xe514d9deb7966c8be0ca922de8a064264ea6bcd4";
 const WETH = "0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5";
 const katanaAdd = "0x7d0556d55ca1a92708681e2e231733ebd922597d";
 const claimsAdd = "0xd4640c26c1a31cd632d8ae1a96fe5ac135d1eb52";
-const stakingAdd = "0x05b0bb3c1c320b280501b86706c3551995bc8571";
+const stakingAdd = "0x05b0bb3c1c320b280501b86706c3551995bc8571"; // and unstake
 
 const wallet = new ethers.Wallet(PRIV_KEY, provider);
 const axsContract = new ethers.Contract(AXS, erc20ABI, provider);
-const katanaRouter = new ethers.Contract(katanaAdd, katanaABI, provider).connect(wallet) as KatanaRouter;
-const stakingContract = new ethers.Contract(stakingAdd, stakingABI, provider).connect(wallet) as StakingContract;
-const claimsContract = new ethers.Contract(claimsAdd, claimsABI, provider).connect(wallet);
+const katanaRouter = new ethers.Contract(
+  katanaAdd,
+  katanaABI,
+  provider
+).connect(wallet) as KatanaRouter;
+const stakingContract = new ethers.Contract(
+  stakingAdd,
+  stakingABI,
+  provider
+).connect(wallet) as StakingContract;
+const claimsContract = new ethers.Contract(
+  claimsAdd,
+  claimsABI,
+  provider
+).connect(wallet);
 
 export async function stakeAXStokens(): Promise<boolean> {
   try {
     const balance = await axsContract.balanceOf(WALLET_ADDRESS);
     const formattedBal = parseFloat(formatEther(balance));
     logger.info("Stake: current AXS balance", { balance });
-
 
     if (formattedBal < 0.01) {
       logger.warn("Stake: balance too small to stake", { formattedBal });
@@ -72,7 +112,10 @@ export async function stakeAXStokens(): Promise<boolean> {
 
     const randomGas = 400000 + Math.random() * (99999 - 10000) + 10000;
     const overrideOptions = { gasLimit: Math.floor(randomGas) };
-    logger.info("Stake: submitting stake tx", { amount: balance.toString(), randomGas });
+    logger.info("Stake: submitting stake tx", {
+      amount: balance.toString(),
+      randomGas,
+    });
 
     let amount = balance;
     console.log("Staking AXS Tokens...");
@@ -116,7 +159,10 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
     const amountIn = parseEther(amount.toString());
     const path = [WRON, WETH, AXS];
 
-    logger.info("Swap: fetching amounts out", { amountIn: amountIn.toString(), path });
+    logger.info("Swap: fetching amounts out", {
+      amountIn: amountIn.toString(),
+      path,
+    });
     const result = await katanaRouter.getAmountsOut(amountIn, path);
 
     const amountOut = Number(ethers.formatEther(result[2])) * 0.99;
@@ -129,7 +175,7 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
       amountOutMin: amountOutMin.toString(),
       path,
       deadline,
-      gasRandom
+      gasRandom,
     });
 
     const swapTx = await katanaRouter.swapExactRONForTokens(
@@ -150,9 +196,9 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
         amountIn: amount,
         amountOut: amountOut,
         priceImpact: ((amount - amountOut) / amount) * 100,
-        gasUsed: swapReceipt.gasUsed?.toString() || '0'
+        gasUsed: swapReceipt.gasUsed?.toString() || "0",
       });
-      
+
       return true;
     }
   } catch (error) {
