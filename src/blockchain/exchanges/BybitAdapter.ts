@@ -11,8 +11,11 @@ import {
 import { ethers } from "ethers";
 import axios from "axios";
 import crypto from "crypto";
+import { MetricsWriter } from "../../monitoring-system/MetricsWriter";
 
 export class BybitAdapter implements IExchangeAdapter {
+  private readonly metricsWriter: MetricsWriter;
+
   private readonly baseUrl = "https://api.bybit.com";
   private readonly futuresEndpoint = "/v5/order/create";
   private readonly cancelOrderEndpoint = "/v5/order/cancel";
@@ -20,7 +23,9 @@ export class BybitAdapter implements IExchangeAdapter {
   private readonly fundingEndpoint = "/v5/market/funding/history";
   private readonly fundingRateEndpoint = "/v5/market/funding/prev-funding-rate";
 
-  constructor(private apiKey: string, private apiSecret: string) {}
+  constructor(private apiKey: string, private apiSecret: string) {
+    this.metricsWriter = MetricsWriter.getInstance();
+  }
   public async createLimit(params: OrderParams): Promise<OrderResult> {
     if (!params.price) {
       throw new Error("Price is required for limit orders");
@@ -45,6 +50,15 @@ export class BybitAdapter implements IExchangeAdapter {
       );
 
       if (response.retCode === 0) {
+        await this.metricsWriter.writeBybitPosition({
+          symbol: params.symbol,
+          side: params.side,
+          size: params.baseSize,
+          orderType: "limit",
+          status: response.result.orderStatus,
+          timestamp: new Date().toISOString(),
+        });
+
         return {
           orderId: response.result.orderId,
           orderType: "limit",
@@ -83,6 +97,15 @@ export class BybitAdapter implements IExchangeAdapter {
       );
 
       if (response.retCode === 0) {
+        await this.metricsWriter.writeBybitPosition({
+          symbol: params.symbol,
+          side: params.side,
+          size: params.baseSize,
+          orderType: "limit",
+          status: response.result.orderStatus,
+          timestamp: new Date().toISOString(),
+        });
+
         return {
           orderId: response.result.orderId,
           orderType: "market",
@@ -239,6 +262,24 @@ export class BybitAdapter implements IExchangeAdapter {
         if (response.result.list && response.result.list.length > 0) {
           const position = response.result.list[0];
 
+          const positionInfo = {
+            symbol: position.symbol,
+            side: position.side,
+            size: parseFloat(position.size),
+            entryPrice: parseFloat(position.entryPrice),
+            leverage: parseFloat(position.leverage),
+            markPrice: parseFloat(position.markPrice),
+            liquidationPrice: parseFloat(position.liqPrice),
+            unrealisedPnl: parseFloat(position.unrealisedPnl),
+            marginType: position.marginType,
+            positionValue: parseFloat(position.positionValue),
+            positionIdx: position.positionIdx,
+            createdTime: position.createdTime,
+            updatedTime: position.updatedTime,
+          };
+
+          await this.metricsWriter.writeBybitPosition(positionInfo);
+
           return {
             symbol: position.symbol,
             side: position.side,
@@ -337,7 +378,6 @@ export class BybitAdapter implements IExchangeAdapter {
       ) {
         const fundingData = response.result.list[0];
 
-        // Получаем информацию о следующем фондировании
         const symbolInfoResponse = await axios.get(
           `${this.baseUrl}/v5/market/tickers`,
           {
@@ -360,6 +400,16 @@ export class BybitAdapter implements IExchangeAdapter {
           nextFundingTime = parseInt(symbolInfo.nextFundingTime || "0");
           predictedRate = parseFloat(symbolInfo.predictedFundingRate || "0");
         }
+        const fundingInfo = {
+          symbol: fundingData.symbol,
+          fundingRate: parseFloat(fundingData.fundingRate),
+          fundingRateTimestamp: parseInt(fundingData.fundingRateTimestamp),
+          predictedFundingRate: predictedRate,
+          nextFundingTime: nextFundingTime,
+        };
+        
+        // Write funding rate metrics
+        await this.metricsWriter.writeFundingRate(fundingInfo);
 
         return {
           symbol: fundingData.symbol,

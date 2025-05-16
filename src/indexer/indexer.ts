@@ -5,6 +5,7 @@ import { eventQueue } from '../queue/eventQueue';
 import logger from "../utils/logger";
 import { parseArgs } from '../utils/parser'
 import { saveToQueue } from "./fetchPastEvents";
+import { MetricsWriter } from "../monitoring-system/MetricsWriter";
 dotenv.config();
 
 export async function runIndexer(provider: ethers.JsonRpcProvider) {
@@ -21,9 +22,10 @@ export function setupContractListener(provider: ethers.JsonRpcProvider, config: 
 
   logger.info("Attaching listener", { name, address: correctAddress, events });
   const contract = new ethers.Contract(correctAddress, abi, provider);
+  const metricsWriter = MetricsWriter.getInstance();
 
   events.forEach((eventName) => {
-    contract.on(eventName, (...args) => {
+    contract.on(eventName, async(...args) => {
       const payload = args[args.length - 1] as {
         blockNumber?: number;
         log: { blockNumber: number; transactionHash: string };
@@ -37,6 +39,15 @@ export function setupContractListener(provider: ethers.JsonRpcProvider, config: 
         blockNumber,
         args: args.map(a => typeof a === "bigint" ? a.toString() : a)
       });
+
+      const eventData = {
+        contract: name,
+        event: eventName,
+        args,
+        blockNumber,
+      };
+
+      await metricsWriter.writeContractEvent(eventData);
       saveToQueue({
         contract: name,
         event: eventName,

@@ -1,13 +1,13 @@
 export enum OrderSide {
-    Buy,
-    Sell
+  Buy,
+  Sell,
 }
 
 export interface OrderParams {
   symbol: string; // e.g. "ETH/USDT"
   baseSize: number;
   price?: number;
-  side: OrderSide,
+  side: OrderSide;
   [key: string]: any;
 }
 
@@ -25,7 +25,7 @@ export interface IExchangeAdapter {
 
 export interface PositionInfo {
   symbol: string;
-  side: 'Buy' | 'Sell';
+  side: "Buy" | "Sell";
   size: number;
   entryPrice: number;
   leverage: number;
@@ -37,4 +37,19 @@ export interface PositionInfo {
   positionIdx: number;
   createdTime: string;
   updatedTime: string;
+}
+
+export interface FundingInfo {
+  symbol: string;
+  fundingRate: number;
+  fundingRateTimestamp: number;
+  predictedFundingRate: number;
+  nextFundingTime: number;
+}
+
+export interface FundingHistory {
+  symbol: string;
+  fundingRate: number;
+  fundingRateTimestamp: number;
+  paymentAmount: number;
 }
