@@ -25,7 +25,5 @@ export class MetricsCollector {
     // 3) funding rate
     //const funding = await this.bybit.fetchFundingRate("AXSUSDT");
     //await mw.writeFundingRate(funding);
-
-    // 4) можно дописать стейкинг, swap etc.
   }
 }

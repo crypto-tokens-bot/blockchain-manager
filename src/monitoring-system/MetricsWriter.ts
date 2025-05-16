@@ -184,4 +184,82 @@ export class MetricsWriter {
       logger.error('Metrics: failed to write strategy performance', { error, performance });
     }
   }
+
+  async writeUnstakingInfo(unstakeInfo: any) {
+    try {
+      const point = new Point('staking_events')
+        .tag('operation', 'unstake')
+        .tag('tx_hash', unstakeInfo.txHash)
+        .floatField('unstaked_amount', parseFloat(unstakeInfo.unstakedAmount)) 
+        .floatField('axs_balance_after', parseFloat(unstakeInfo.axsBalanceAfter))
+        .floatField('remaining_staked', parseFloat(unstakeInfo.remainingStaked))
+        .intField('block_number', unstakeInfo.blockNumber)
+        .timestamp(new Date(unstakeInfo.timestamp));
+  
+      this.writeApi.writePoint(point);
+      await this.writeApi.flush();
+      
+      logger.info('Metrics: unstaking info written to InfluxDB', { 
+        txHash: unstakeInfo.txHash,
+        amount: unstakeInfo.unstakedAmount 
+      });
+    } catch (error) {
+      logger.error('Metrics: failed to write unstaking info', { error, unstakeInfo });
+    }
+  }
+
+  async writeClaimInfo(claimInfo: any) {
+    try {
+      const point = new Point('staking_events')
+        .tag('operation', 'claim_rewards')
+        .tag('tx_hash', claimInfo.txHash)
+        .floatField('claimed_amount', parseFloat(claimInfo.claimedAmount))
+        .floatField('axs_balance_after', parseFloat(claimInfo.axsBalanceAfter))
+        .intField('block_number', claimInfo.blockNumber)
+        .timestamp(new Date(claimInfo.timestamp));
+  
+      this.writeApi.writePoint(point);
+      await this.writeApi.flush();
+      
+      logger.info('Metrics: claim rewards info written to InfluxDB', { 
+        txHash: claimInfo.txHash,
+        amount: claimInfo.claimedAmount 
+      });
+    } catch (error) {
+      logger.error('Metrics: failed to write claim rewards info', { error, claimInfo });
+    }
+  }
+
+  async writeWithdrawalMetrics(data: {
+    user: string;
+    mmmAmount: string;
+    withdrawalId: string;
+    status: 'started' | 'completed' | 'failed';
+    error?: string;
+    timestamp: string;
+  }) {
+    try {
+      const point = new Point('withdrawal_events')
+        .tag('user', data.user)
+        .tag('withdrawal_id', data.withdrawalId)
+        .tag('status', data.status)
+        .floatField('mmm_amount', parseFloat(data.mmmAmount))
+        .timestamp(new Date(data.timestamp));
+      
+      if (data.error) {
+        point.stringField('error', data.error);
+      }
+  
+      this.writeApi.writePoint(point);
+      await this.writeApi.flush();
+      
+      logger.info('Metrics: withdrawal metrics written to InfluxDB', { 
+        withdrawalId: data.withdrawalId,
+        status: data.status
+      });
+    } catch (error) {
+      logger.error('Metrics: failed to write withdrawal metrics', { error, data });
+    }
+  }
 }
+
