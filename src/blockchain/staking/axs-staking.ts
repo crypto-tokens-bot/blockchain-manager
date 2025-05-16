@@ -2,7 +2,10 @@ import "dotenv/config";
 import { ethers } from "ethers";
 import fs from "fs/promises";
 import { formatEther, parseEther } from "ethers";
+import { BigNumberish } from "ethers";
 import { MetricsWriter } from "../../monitoring-system/MetricsWriter";
+import path from "path";
+import logger from "../../utils/logger";
 
 interface Claims {
   previousClaim: string;
@@ -207,8 +210,138 @@ export async function swapRONforAXS(amount: number): Promise<boolean> {
   return false;
 }
 
-import path from "path";
-import logger from "../../utils/logger";
+export async function unstakeAXS(amountOrPercent: number, isPercent: boolean = false): Promise<boolean> {
+  try {
+    const stakedAmount = await stakingContract.getStakingAmount(WALLET_ADDRESS);
+    const formattedStaked = parseFloat(formatEther(stakedAmount));
+    
+    logger.info("Unstake: current staked AXS amount", { stakedAmount: formattedStaked });
+    
+    if (formattedStaked <= 0) {
+      logger.warn("Unstake: no AXS tokens staked", { stakedAmount: formattedStaked });
+      return false;
+    }
+    
+    let amountToUnstake: bigint;
+    
+    if (isPercent) {
+      // We check that the percentage is in the acceptable range.
+      if (amountOrPercent <= 0 || amountOrPercent > 100) {
+        throw new Error(`Invalid unstake percentage: ${amountOrPercent}. Must be between 1 and 100.`);
+      }
+      
+      // If 100% or close to it is specified, we use unstakeAll to prevent rounding errors.
+      if (amountOrPercent >= 99.99) {
+        return await unstakeAllAXS();
+      }
+      const stakedBigInt = ethers.toBigInt(stakedAmount);
+      const percentBigInt = ethers.toBigInt(Math.floor(amountOrPercent * 100));
+      const divisorBigInt = ethers.toBigInt(10000);
+      
+      // Calculate the amount based on the percentage
+      amountToUnstake = (stakedBigInt * percentBigInt) / divisorBigInt;
+    } else {
+      amountToUnstake = parseEther(amountOrPercent.toString());
+      
+      const stakedBigInt = ethers.toBigInt(stakedAmount);
+      if (amountToUnstake > stakedBigInt) {
+        logger.warn("Unstake: requested amount exceeds staked amount", { 
+          requested: formatEther(amountToUnstake),
+          staked: formatEther(stakedBigInt)
+        });
+        amountToUnstake = stakedBigInt; // We limit the amount of steak
+      }
+    }
+    
+    if (amountToUnstake < parseEther("0.001")) {
+      logger.warn("Unstake: amount too small", { amount: formatEther(amountToUnstake) });
+      throw new Error("Unstake amount is too small!");
+    }
+
+    const randomGas = 400000 + Math.random() * (99999 - 10000) + 10000;
+    const overrideOptions = { gasLimit: Math.floor(randomGas) };
+    
+    logger.info("Unstake: submitting unstake tx", { 
+      amount: formatEther(amountToUnstake),
+      randomGas
+    });
+
+    const unstakeTx = await stakingContract.unstake(amountToUnstake, overrideOptions);
+    const receipt = await unstakeTx.wait();
+
+    if (receipt) {
+      const axsBal = await axsContract.balanceOf(WALLET_ADDRESS);
+      const newStakedAmount = await stakingContract.getStakingAmount(WALLET_ADDRESS);
+      
+      console.log("AXS UNSTAKE SUCCESSFUL");
+      console.log("AXS Balance after unstake: " + formatEther(axsBal));
+      console.log("AXS Still staked: " + formatEther(newStakedAmount));
+
+      const unstakeInfo = {
+        timestamp: new Date().toISOString(),
+        txHash: unstakeTx.hash,
+        unstakedAmount: formatEther(amountToUnstake),
+        axsBalanceAfter: formatEther(axsBal),
+        remainingStaked: formatEther(newStakedAmount),
+        blockNumber: receipt.blockNumber,
+      };
+      await storeUnstakeInfo(unstakeInfo);
+      logger.info("Unstake: completed successfully", unstakeInfo);
+
+      return true;
+    }
+  } catch (error) {
+    logger.error("unstakeAXS error:", error);
+  }
+  return false;
+}
+/**
+ * An stack of all AXS tokens at once
+ * @returns Promise<boolean> Operation success
+ */
+export async function unstakeAllAXS(): Promise<boolean> {
+  try {
+    const stakedAmount = await stakingContract.getStakingAmount(WALLET_ADDRESS);
+    const formattedStaked = parseFloat(formatEther(stakedAmount));
+    
+    logger.info("UnstakeAll: current staked AXS", { stakedAmount: formattedStaked });
+    
+    if (formattedStaked <= 0) {
+      logger.warn("UnstakeAll: no AXS tokens staked", { stakedAmount: formattedStaked });
+      return false;
+    }
+
+    const randomGas = 400000 + Math.random() * (99999 - 10000) + 10000;
+    const overrideOptions = { gasLimit: Math.floor(randomGas) };
+    logger.info("UnstakeAll: submitting unstakeAll tx", { randomGas });
+
+    const unstakeTx = await stakingContract.unstakeAll(overrideOptions);
+    const receipt = await unstakeTx.wait();
+
+    if (receipt) {
+      const axsBal = await axsContract.balanceOf(WALLET_ADDRESS);
+      
+      console.log("AXS UNSTAKE ALL SUCCESSFUL");
+      console.log("AXS Balance after unstake: " + formatEther(axsBal));
+
+      const unstakeInfo = {
+        timestamp: new Date().toISOString(),
+        txHash: unstakeTx.hash,
+        unstakedAmount: formatEther(stakedAmount),
+        axsBalanceAfter: formatEther(axsBal),
+        remainingStaked: "0",
+        blockNumber: receipt.blockNumber,
+      };
+      await storeUnstakeInfo(unstakeInfo);
+      logger.info("UnstakeAll: completed successfully", unstakeInfo);
+
+      return true;
+    }
+  } catch (error) {
+    logger.error("unstakeAllAXS error:", error);
+  }
+  return false;
+}
 
 async function storeStakeInfo(info: any): Promise<void> {
   const filePath = path.resolve(__dirname, "stake-info.json");
@@ -228,4 +361,44 @@ async function storeStakeInfo(info: any): Promise<void> {
 
   const metricsWriter = MetricsWriter.getInstance();
   await metricsWriter.writeStakingInfo(info);
+}
+
+async function storeUnstakeInfo(info: any): Promise<void> {
+  const filePath = path.resolve(__dirname, "unstake-info.json");
+  let existingData: any[] = [];
+  try {
+    const content = await fs.readFile(filePath, "utf8");
+    existingData = JSON.parse(content);
+    if (!Array.isArray(existingData)) {
+      existingData = [];
+    }
+  } catch (err) {
+    existingData = [];
+  }
+  existingData.push(info);
+  await fs.writeFile(filePath, JSON.stringify(existingData, null, 2));
+  logger.info("Unstake info saved to file.", { filePath, info });
+
+  const metricsWriter = MetricsWriter.getInstance();
+  await metricsWriter.writeUnstakingInfo(info);
+}
+
+async function storeClaimInfo(info: any): Promise<void> {
+  const filePath = path.resolve(__dirname, "claim-info.json");
+  let existingData: any[] = [];
+  try {
+    const content = await fs.readFile(filePath, "utf8");
+    existingData = JSON.parse(content);
+    if (!Array.isArray(existingData)) {
+      existingData = [];
+    }
+  } catch (err) {
+    existingData = [];
+  }
+  existingData.push(info);
+  await fs.writeFile(filePath, JSON.stringify(existingData, null, 2));
+  logger.info("Claim info saved to file.", { filePath, info });
+
+  const metricsWriter = MetricsWriter.getInstance();
+  await metricsWriter.writeClaimInfo(info);
 }
