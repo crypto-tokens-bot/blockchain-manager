@@ -30,7 +30,6 @@ export class MetricsWriter {
         .intField('block_number', event.blockNumber)
         .timestamp(new Date());
 
-      // Добавляем специфичные поля для разных событий
       switch (event.event) {
         case 'Deposited':
           point.floatField('amount', parseFloat(event.args[1].toString()) / 1e18);
