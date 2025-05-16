@@ -22,9 +22,7 @@ async function testBybitMarketOrder() {
   const baseSize = 2;
   const side = OrderSide.Sell;
 
-  console.log(
-    `Creating market ${side} order for ${baseSize} ${symbol}...`
-  );
+  console.log(`Creating market ${side} order for ${baseSize} ${symbol}...`);
 
   try {
     const result = await bybitAdapter.createMarket({
@@ -38,7 +36,7 @@ async function testBybitMarketOrder() {
 
     console.log("Market order created successfully:");
     console.log(JSON.stringify(result, null, 2));
-    
+
     return result;
   } catch (error) {
     console.error("Error creating market order:", error);

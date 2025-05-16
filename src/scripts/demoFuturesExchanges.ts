@@ -1,5 +1,5 @@
 // src/scripts/demoFuturesExchanges.ts
-import { CoinGeckoClient } from '../blockchain/coinGeckoClient';
+import { CoinGeckoClient } from '../blockchain/services/coinGeckoClient';
 
 import dotenv from "dotenv";
 dotenv.config();

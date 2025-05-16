@@ -14,7 +14,7 @@ const RONIN_RECIPIENT: string = process.env.RONIN_RECIPIENT!;
 const provider = new ethers.JsonRpcProvider(ETH_RPC_URL); //
 const wallet = new ethers.Wallet(PRIVATE_KEY as `0x${string}`, provider);
 
-const bridgeContract = new ethers.Contract(
+export const bridgeContract = new ethers.Contract(
   CCIP_BRIDGE_ADDRESS,
   bridgeABI,
   wallet

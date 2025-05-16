@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { HyperliquidConnector, OrderParams } from "../blockchain/wrapppers/hyperliquidConnector";
+import { HyperliquidConnector, OrderParams } from "../blockchain/exchanges/hyperliquidConnector";
 import { getAssetData } from "../blockchain/utils/hyperliquidUtils";
 
 async function testHyperliquidOrders() {

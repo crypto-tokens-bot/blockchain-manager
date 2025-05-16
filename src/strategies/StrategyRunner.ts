@@ -69,3 +69,8 @@ export function runStrategyRunner() {
     }
   );
 }
+
+
+interface IStrategyStep {
+  execute(...args: any[]): Promise<void>;
+}
